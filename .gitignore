@@ -1,0 +1,10 @@
+
+.vscode
+# Ignore any executables
+bin/*
+
+# Ignore any keys
+keys/*
+
+# Ignore any logs
+logs/*
