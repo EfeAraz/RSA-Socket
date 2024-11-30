@@ -1,10 +1,16 @@
 
 .vscode
 # Ignore any executables
+*.exe
 bin/*
+!bin/.placeholder
 
 # Ignore any keys
+*.key
 keys/*
+!keys/.placeholder
 
 # Ignore any logs
+*.log
 logs/*
+!logs/.placeholder
