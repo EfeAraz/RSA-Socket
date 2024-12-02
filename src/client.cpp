@@ -3,10 +3,13 @@
 #include <string>
 // TO-DO
 // -Fix decrypt-encrypt file location
+// -Send public key to server
+// -Send Encyrpted messages to server 
+
 
 class message{
     public:
-        int sender_id;
+        int sender_id ;
         std::string content;
 
 };
@@ -17,27 +20,32 @@ class client{
         std::string public_key;
 
     public:
-    client(){
-        public_key = readFile("keys/public.key");
-        private_key = readFile("keys/private.key");
-    } 
+        std::string name;
+        client(){
+            public_key = readFile("keys/public.key");
+            private_key = readFile("keys/private.key");
+        } 
 
-    std::string readFile(std::string file_name){ 
-        std::string file_contents;
-        std::ifstream file(file_name);
+        std::string readFile(std::string file_name){ 
+            std::string file_contents;
+            std::ifstream file(file_name);
+            
+                if ( file.is_open() ){
+                    std::string file_line;
+                    while (std::getline(file, file_line)) {
+                        file_contents += file_line + "\n"; 
+                        }
+                }
+                else {
+                    std::cerr << "Failed to open public key file.\n"; 
+                }
+            return file_contents;
+        }   
         
-            if ( file.is_open() ){
-                std::string file_line;
-                while (std::getline(file, file_line)) {
-                    file_contents += file_line + "\n"; 
-                    }
-            }
-            else {
-                std::cerr << "Failed to open public key file.\n"; 
-            }
-        return file_contents;
-    }   
-    
+    void printKeys(){
+        std::cout << this->private_key << "\n";
+        std::cout << this->public_key << "\n";
+    }
 
 
     message encrypt(message msg){
@@ -56,6 +64,7 @@ class client{
 int main(int argc,char** argv){
     message msg;
     client user;
+    user.name = "arz";
     if(argc <= 1){ 
         std::cout << "Enter Your Message: " << "\n";
         std::getline(std::cin,msg.content);
@@ -68,7 +77,7 @@ int main(int argc,char** argv){
         }
         msg.content = tempmsg;
     }
-    
+    std::cout << user.name << ": " << msg.content << "\n";
 
     return 0;
 }
