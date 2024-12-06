@@ -82,7 +82,7 @@ class client{
         */
         firstMessage.content = this->name + "\n" 
             + std::to_string(this->userID) + "\n"
-            + this->public_key; "\n";
+            + this->public_key;
 
         // Send First Message to Server 
 
@@ -106,13 +106,14 @@ int main(int argc,char** argv){
     else{
         std::string tempmsg;
         for(int i = 1; i < argc; i++){
-            if((argv[i] == "-u") && (i + 1 < argc)){
+            /*if((argv[i] == "-u") && (i + 1 < argc)){
                 user.name = argv[i+1];
                 i++;
             }
-            else{
+            else
+            */{
                 std::cout << "Message "<< i << ": " << argv[i] << "\n";
-                tempmsg += *argv[i] + " "  ;
+                tempmsg += *argv[i] + ' '  ;
             }
         }
         msg.content = tempmsg;
