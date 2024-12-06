@@ -2,7 +2,6 @@
 #include <iostream>
 #include <string>
 #include <sys/socket.h>
-
 // TO-DO
 // -Fix decrypt-encrypt file location
 // -Send public key to server
@@ -13,7 +12,8 @@ class message{
     private:
         int message_id;
     public:
-        int sender_id;
+        int author_id;
+        std::string author_name;
         std::string content;
 
 };
@@ -22,7 +22,6 @@ class client{
     private:
         std::string private_key;
         int userID;
-
     public:
         std::string public_key;
         std::string name;
@@ -55,7 +54,7 @@ class client{
         std::cout << this->public_key << "\n";
     }
 
-1
+
     message encrypt(message msg, std::string ){
         message encrypted_msg;
 
