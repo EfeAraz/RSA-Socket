@@ -28,7 +28,7 @@ int main(int argc, char **argv){
     server_addr.sin_addr.s_addr = INADDR_ANY; // listen on all available interfaces
 
 
-	// do --- , check if --- is done
+	// if --- is not done close socket exit
     //create socketfd with IPv4 and TCP, 
     if((server_sockfd = socket(AF_INET,SOCK_STREAM,0)) < 0) {  			
 		std::cerr << "socket creation failed\n"; 

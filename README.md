@@ -1,8 +1,7 @@
 ## TODO
--[] TCP Handshake 
--[] C
--[] Select which layer to work on: 
--[]
+-[] Connect client to server and send messages
+-[] Encrypt messages and send to server
+-[] Generate encryption keys and save them
 
 OSI model by layers
 7.  Application layer   probably not
