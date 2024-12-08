@@ -96,6 +96,7 @@ class client{
 
 
 int main(int argc,char** argv){
+    int port_no = 8079;
     message msg;
     client user;
     user.name = "arz";

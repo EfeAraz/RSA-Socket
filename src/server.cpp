@@ -8,22 +8,20 @@
 #include <arpa/inet.h>
 #include <unistd.h> //close()
 
-#define port_no 8079
-#define max_client_count 3
-
-
-
-
-int main(int argc, char **argv){
-	// #define AF_INET PF_INET
+	// #define AF_INET PF_INET -> They are same
     // AF_INET: Address Format_Internet = IP Addresses ()
     // PF_INET: Packet Format_Internet = IP, TCP/IP or UDP/IP 
-	
 
-	int server_sockfd;	// socket file descriptor 
-    sockaddr_in server_addr; // internet socket address descriptor 
-	memset(&server_addr, 0, sizeof(server_addr)); // server_addr : Null  
-    server_addr.sin_family = AF_INET; 	// IPv4
+int main(int argc, char **argv){
+	
+	int port_no = 8079;
+	int max_client_count = 3;
+
+	int server_sockfd;			// socket file descriptor 
+    sockaddr_in server_addr; 	// internet socket address descriptor 
+	memset(&server_addr, 0, sizeof(server_addr));
+    
+	server_addr.sin_family = AF_INET; 	// IPv4
 	server_addr.sin_port = htons(port_no); // set port for server   
     server_addr.sin_addr.s_addr = INADDR_ANY; // listen on all available interfaces
 
@@ -81,3 +79,6 @@ int main(int argc, char **argv){
 	close(server_sockfd);
     return 0;
 }
+
+
+
