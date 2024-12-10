@@ -7,6 +7,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h> //close()
+#include "message.h"
+
+int port_no = 8079;
+int max_client_count = 3;
 
 	// #define AF_INET PF_INET -> They are same
     // AF_INET: Address Format_Internet = IP Addresses ()
@@ -14,8 +18,7 @@
 
 int main(int argc, char **argv){
 	
-	int port_no = 8079;
-	int max_client_count = 3;
+	
 
 	int server_sockfd;			// socket file descriptor 
     sockaddr_in server_addr; 	// internet socket address descriptor 

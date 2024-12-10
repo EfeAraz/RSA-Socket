@@ -2,21 +2,11 @@
 #include <iostream>
 #include <string>
 #include <sys/socket.h>
+#include "message.h"
 // TO-DO
 // -Fix decrypt-encrypt file location
 // -Send public key to server
 // -Send Encyrpted messages to server 
-
-
-class message{
-    private:
-        int message_id;
-    public:
-        int author_id;
-        std::string author_name;
-        std::string content;
-
-};
 
 class client{
     private:
@@ -82,7 +72,7 @@ class client{
         */
         firstMessage.content = this->name + "\n" 
             + std::to_string(this->userID) + "\n"
-            + this->public_key;
+            + this->public_key; "\n";
 
         // Send First Message to Server 
 
@@ -96,7 +86,6 @@ class client{
 
 
 int main(int argc,char** argv){
-    int port_no = 8079;
     message msg;
     client user;
     user.name = "arz";
@@ -107,14 +96,13 @@ int main(int argc,char** argv){
     else{
         std::string tempmsg;
         for(int i = 1; i < argc; i++){
-            /*if((argv[i] == "-u") && (i + 1 < argc)){
+            if((argv[i] == "-u") && (i + 1 < argc)){
                 user.name = argv[i+1];
                 i++;
             }
-            else
-            */{
+            else{
                 std::cout << "Message "<< i << ": " << argv[i] << "\n";
-                tempmsg += *argv[i] + ' '  ;
+                tempmsg += *argv[i] + " "  ;
             }
         }
         msg.content = tempmsg;
