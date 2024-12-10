@@ -8,7 +8,8 @@ class message{
         int author_id;
         std::string author_name;
         std::string content;
-
 };
+
+
 
 #endif /** MESSAGE-H */
