@@ -1,6 +1,6 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
-
+#include <iostream>
 class message{
     private:
         int message_id;
@@ -12,4 +12,5 @@ class message{
 
 
 
-#endif /** MESSAGE-H */
+
+#endif // MESSAGE_H 

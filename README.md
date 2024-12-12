@@ -1,8 +1,9 @@
 ## TODO
-- [] Connect client to server and send messages  
-- [] Encrypt messages and send to server  
-- [] Generate encryption keys and save them    
-- [] implement sendmsg / sendmmsg (man)  
+- [ ] Connect client to server and send messages  
+- [ ] Encrypt messages and send to server  
+- [ ] Generate encryption keys and save them    
+- [ ] implement sendmsg / sendmmsg (man)  
+- [ ] Protection against DoS and other types of attacks   
 
 ## Description
 Sending Encrypted Messages using private and public keys with RSA encryption algorithm and network ports 
