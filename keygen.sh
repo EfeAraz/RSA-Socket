@@ -3,8 +3,8 @@
 KEYS_DIR="keys"
 
 # Files
-PRIVATE_KEY="keys/private.key"
-PUBLIC_KEY="keys/public.key"
+PRIVATE_KEY="keys/private.pem"
+PUBLIC_KEY="keys/public.pem"
 
 # Key length (2048 bits for security)
 KEY_LENGTH=2048
