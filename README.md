@@ -7,7 +7,7 @@
 - [ ] Protection against DoS and other types of attacks   
 ---
 # Description
-C++ Project that uses OpenSSL's high level cryptographic functions (evp) to encyrpt/decrypt messages and send/recieve using sockets    
+C++ Project that uses OpenSSL's high level cryptographic functions (evp) to encyrpt/decrypt messages and send/recieve messages using sockets    
 
 ## Dependencies 
 
