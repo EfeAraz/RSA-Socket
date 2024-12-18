@@ -9,15 +9,17 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 
-// TO-DO
-// -Send public key to server
-// -Send Encyrpted messages to server 
-// get the public key from server and save it to a file
-void handleOpenSSLError();
-EVP_PKEY* loadPublicKey(const std::string& publicKeyFile);
-EVP_PKEY* loadPrivateKey(const std::string& privateKeyFile);
-std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKey,const std::string& text);
-std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsigned char>& encryptedText);
+/* TO-DO
+ *  - Send public key to server
+ *  - Send Encyrpted messages to server
+ *  - Get the public key from server and save it to a file
+ *  - Send sender info to server
+ */
+    void handleOpenSSLError();
+    EVP_PKEY* loadPublicKey(const std::string& publicKeyFile);
+    EVP_PKEY* loadPrivateKey(const std::string& privateKeyFile);
+    std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKey,const std::string& text);
+    std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsigned char>& encryptedText);
 
 int main(int argc,char** argv){
     
