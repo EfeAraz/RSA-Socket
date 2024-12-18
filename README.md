@@ -1,14 +1,13 @@
-## TODO
-- [ ] CHANGE EVERY RSA KEYWORD TO PGP    
+## TODO 
 - [ ] Connect client to server and send messages  
-- [ ] Encrypt messages and send to server  
-- [ ] Generate encryption keys and save them    
+- [ ] send encrypted messages to server  
+- [ ] send public key to server  
+- [ ] send public key from server to other client   
 - [ ] implement sendmsg / sendmmsg (man)  
 - [ ] Protection against DoS and other types of attacks   
 ---
 # Description
-Sending Encrypted Messages using private and public keys with PGP or GPG encryption algorithm (haven't decided yet) and network ports  
-
+C++ Project that uses OpenSSL's high level cryptographic functions (evp) to encyrpt/decrypt messages and send/recieve using sockets    
 
 ## Dependencies 
 
@@ -16,9 +15,9 @@ Sending Encrypted Messages using private and public keys with PGP or GPG encrypt
 
 ## Setting up for the first time
 
-```bash
-git clone https://github.com/EfeAraz/RSA-Socket;  
-sudo pacman -S openssl;  
+```bash 
+sudo pacman -S openssl; # if you don't already have it installed  
+git clone git@github.com:EfeAraz/RSA-Socket;  
 cd RSA-Socket/;  
 chmod +x keygen.sh;  
 ./keygen.sh;  
