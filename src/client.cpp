@@ -1,3 +1,9 @@
+/* TO-DO
+ *  - Send public key to server
+ *  - Send Encyrpted messages to server
+ *  - Get the public key from server and save it to a file
+ *  - Send sender info to server
+ */
 #include <cstdio>
 #include <iostream>
 #include <ostream>
@@ -5,21 +11,20 @@
 // #include <fstream> // for file transfers 
 #include <vector>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
 
-/* TO-DO
- *  - Send public key to server
- *  - Send Encyrpted messages to server
- *  - Get the public key from server and save it to a file
- *  - Send sender info to server
- */
-    void handleOpenSSLError();
-    EVP_PKEY* loadPublicKey(const std::string& publicKeyFile);
-    EVP_PKEY* loadPrivateKey(const std::string& privateKeyFile);
-    std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKey,const std::string& text);
-    std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsigned char>& encryptedText);
+#define SOCKET_PORT 8079
+
+void handleOpenSSLError();
+EVP_PKEY* loadPublicKey(const std::string& publicKeyFile);
+EVP_PKEY* loadPrivateKey(const std::string& privateKeyFile);
+std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKey,const std::string& text);
+std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsigned char>& encryptedText);
+void connectToServer(std::string message,int port_no);
+
 
 int main(int argc,char** argv){
     
@@ -53,7 +58,7 @@ int main(int argc,char** argv){
     std::string decryptedMessage =  decryptWithPrivateKey(privateKey,encrypted);
     std::cout << "\nDecrpyted message: " << decryptedMessage << std::endl;
 
-    
+    connectToServer(decryptedMessage,8079);
     
     EVP_PKEY_free(publicKey);
     EVP_PKEY_free(privateKey); 
@@ -149,4 +154,24 @@ std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsign
     EVP_PKEY_CTX_free(ctx); 
 
     return std::string(decrypted.begin(), decrypted.end());
+}
+
+void connectToServer(std::string message,int port_no = SOCKET_PORT){
+    int clientSocket = socket(AF_INET ,SOCK_STREAM ,0);
+    if(clientSocket == -1){
+        std::cerr << "Socket Creation Failed\n";
+        exit(1); 
+    }
+    sockaddr_in serverAddress;
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_port = htons(port_no);
+    serverAddress.sin_addr.s_addr = INADDR_ANY;
+    int connection = connect(clientSocket ,reinterpret_cast<sockaddr*>(&serverAddress), sizeof(serverAddress));
+    if(connection == -1){
+        std::cerr << "Connection failed\n";
+        exit(1);
+    }
+    const char* msg = message.c_str();
+    send(clientSocket,msg,strlen(msg),0);
+    std::cout <<  "Connected!\n";
 }
