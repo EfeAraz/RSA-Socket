@@ -72,7 +72,7 @@ int main(int argc, char **argv){
 		inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
 
 		while(recv(conn, recv_buf, sizeof(recv_buf), 0) > 0 ){
-			std::cout << "recv "<< recv_buf << "from client:" << client_ip << ntohs(client_addr.sin_port) << std::endl;
+			std::cout << "recieved message:  "<< recv_buf << "\nfrom client " << client_ip << ":" << client_addr.sin_port << std::endl;
 			memset(recv_buf, '\0', sizeof(recv_buf));
 			break;
 		}

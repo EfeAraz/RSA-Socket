@@ -16,7 +16,7 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 
-#define SOCKET_PORT 8079
+#define SOCKET_PORT 8080
 
 void handleOpenSSLError();
 EVP_PKEY* loadPublicKey(const std::string& publicKeyFile);
@@ -28,8 +28,7 @@ void connectToServer(std::string message,int port_no);
 
 int main(int argc,char** argv){
     
-    const std::string publicKeyFile = "./keys/public.pem"; // get public key from server 
-    // send public key
+    const std::string publicKeyFile = "./keys/public.pem"; 
     const std::string privateKeyFile = "./keys/private.pem";
     EVP_PKEY* publicKey = loadPublicKey(publicKeyFile);
     EVP_PKEY* privateKey = loadPrivateKey(privateKeyFile);
@@ -50,15 +49,19 @@ int main(int argc,char** argv){
     std::cout << "\nEncrypted message in hex format: \n"; // base16 
     // i will use base64 later
     // static const std::string base64letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"; 
-    for(unsigned char c : encrypted){
-        printf("%02x", c);
+    std::string hexEncryptedMessage;
+    for (unsigned char c : encrypted) {
+        char hexByte[3]; // Two characters for hex + null terminator
+        snprintf(hexByte, sizeof(hexByte), "%02x", c);
+        hexEncryptedMessage += hexByte;
     }
-    std::cout << std::endl;
+
+    std::cout << hexEncryptedMessage << std::endl;
 
     std::string decryptedMessage =  decryptWithPrivateKey(privateKey,encrypted);
     std::cout << "\nDecrpyted message: " << decryptedMessage << std::endl;
 
-    connectToServer(decryptedMessage,8079);
+    connectToServer(hexEncryptedMessage,SOCKET_PORT);
     
     EVP_PKEY_free(publicKey);
     EVP_PKEY_free(privateKey); 
@@ -102,7 +105,7 @@ EVP_PKEY* loadPrivateKey(const std::string& privateKeyFile){
     fclose(fp);
 
     if(!privateKey){
-        std::cerr << "Error: Couldn't read public key\n";
+        std::cerr << "Error: Couldn't read private key\n";
         handleOpenSSLError();
     }
     return privateKey;
