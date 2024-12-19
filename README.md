@@ -1,9 +1,8 @@
 ## TODO 
 - [x] Connect client to server and send messages  
-- [ ] send encrypted messages to server  
+- [ ] send encrypted messages to server  n
 - [ ] send public key to server  
 - [ ] send public key from server to other client   
-- [ ] implement sendmsg / sendmmsg (man)  
 - [ ] Protection against DoS and other types of attacks   
 - [ ] add salt to messages/keys
 ---
