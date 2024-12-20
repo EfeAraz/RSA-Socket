@@ -66,13 +66,13 @@ int main(int argc, char **argv){
 			return -1;
 		}
 
-		std::cout << "new client accepted." << std::endl;
+		std::cout << "\nnew client accepted." << std::endl;
 
 		char client_ip[INET_ADDRSTRLEN] = "";
 		inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
 
 		while(recv(conn, recv_buf, sizeof(recv_buf), 0) > 0 ){
-			std::cout << "recieved message:  "<< recv_buf << "\nfrom client " << client_ip << ":" << ntohs(client_addr.sin_port) << std::endl;
+			std::cout << "recieved message:\n"<< recv_buf << "\n\nfrom client " << client_ip << ":" << ntohs(client_addr.sin_port) << std::endl;
 			memset(recv_buf, '\0', sizeof(recv_buf));
 			break;
 		}
