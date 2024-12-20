@@ -1,7 +1,7 @@
 ## TODO 
 - [x] Connect client to server and send messages  
-- [ ] send encrypted messages to server  n
-- [ ] send public key to server  
+- [x] send encrypted messages to server  n
+- [x] send public key to server  
 - [ ] send public key from server to other client   
 - [ ] Protection against DoS and other types of attacks   
 - [ ] add salt to messages/keys
@@ -27,13 +27,13 @@ chmod +x keygen.sh;
 ## Client :
 ```bash
 g++ ./src/client.cpp -o ./bin/client -lssl -lcrypto;
-./bin/client;  
+./bin/client 8080;  
 ```  
 
 ## Server :
 ```bash
 g++ ./src/server.cpp -o ./bin/server;  
-./bin/server  
+./bin/server 8080;
 ```
 ### References:
 - man command for manuals  

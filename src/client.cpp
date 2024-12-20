@@ -81,6 +81,7 @@ int main(int argc,char** argv){
     std::cout << "\nDecrpyted message: " << decryptedMessage << std::endl;
 
     sendMessage(clientSocket,base64EncodedMessage,SOCKET_PORT);
+    sleep(1);
     }
     close(clientSocket);
     EVP_PKEY_free(publicKey);
