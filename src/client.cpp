@@ -8,12 +8,13 @@
 #include <string>
 // #include <fstream> // for file transfers 
 #include <vector>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
-
+ 
 #define SOCKET_PORT 8080
 
 // Function declarations
@@ -22,10 +23,11 @@ EVP_PKEY* loadPublicKey(const std::string& publicKeyFile);
 EVP_PKEY* loadPrivateKey(const std::string& privateKeyFile);
 std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKey,const std::string& text);
 std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsigned char>& encryptedText);
-int connectToServer(std::string message,int port_no);
+int connectToServer(int port_no);
+int sendMessage(int ClientSocket, std::string message, int port_no);
 std::string base64Encode(const std::vector<unsigned char>& input);
 std::vector<unsigned char> base64Decode(const std::string& base64Text);
-void sendPublicKeyToServer(EVP_PKEY* publicKey,int port_no);
+void sendPublicKeyToServer(int clientSocket,EVP_PKEY* publicKey,int port_no);
 
 int main(int argc,char** argv){
     
@@ -37,12 +39,19 @@ int main(int argc,char** argv){
         std::cerr << "Error: something happened while reading key\n";
         return 1;
     }
-    sendPublicKeyToServer(publicKey,SOCKET_PORT);
+    int clientSocket = connectToServer(SOCKET_PORT); 
+    sendPublicKeyToServer(clientSocket,publicKey,SOCKET_PORT);
     // get other person's public key from server 
     std::string message = "hi guys :3";
-    
-    std::cout << "enter your message: \n";
-    std::getline(std::cin,message);
+
+    while (true) {
+            std::string message;
+            std::cout << "Enter your message (type 'exit' to quit): ";
+            std::getline(std::cin, message);
+
+            if (message == "exit") {
+                break;
+            }
     
     std::vector<unsigned char> encrypted = encryptWithPublicKey(publicKey, message);  
     std::string base64EncodedMessage = base64Encode(encrypted);
@@ -57,21 +66,23 @@ int main(int argc,char** argv){
     std::cout << "\nEncrypted message in hex format: \n"; // base16 
     std::cout << hexEncryptedMessage << std::endl;
     */
-
-    std::cout << "\nEncrypted message in base64 format: \n"; // base16 
-    std::cout << base64EncodedMessage << std::endl;
-    
     /*
     std::string decryptedMessage =  decryptWithPrivateKey(privateKey,encrypted);
     std::cout << "\nDecrpyted message: " << decryptedMessage << std::endl;
     */
+
+    std::cout << "\nEncrypted message in base64 format: \n"; // base16 
+    std::cout << base64EncodedMessage << std::endl;
+    
+
     
     std::vector<unsigned char> base64DecodededMessage = base64Decode(base64EncodedMessage);
     std::string decryptedMessage =  decryptWithPrivateKey(privateKey,base64DecodededMessage);
     std::cout << "\nDecrpyted message: " << decryptedMessage << std::endl;
 
-    connectToServer(base64EncodedMessage,SOCKET_PORT);
-    
+    sendMessage(clientSocket,base64EncodedMessage,SOCKET_PORT);
+    }
+    close(clientSocket);
     EVP_PKEY_free(publicKey);
     EVP_PKEY_free(privateKey); 
     return 0;
@@ -168,13 +179,13 @@ std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsign
     return std::string(decrypted.begin(), decrypted.end());
 }
 
-
-int connectToServer(std::string message,int port_no = SOCKET_PORT){
+int connectToServer(int port_no = SOCKET_PORT){
     int clientSocket = socket(AF_INET ,SOCK_STREAM ,0);
     if(clientSocket == -1){
         std::cerr << "Socket Creation Failed\n";
-        return -1; 
+        return 1;
     }
+
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port_no);
@@ -182,12 +193,21 @@ int connectToServer(std::string message,int port_no = SOCKET_PORT){
     int connection = connect(clientSocket ,reinterpret_cast<sockaddr*>(&serverAddress), sizeof(serverAddress));
     if(connection == -1){
         std::cerr << "Connection failed\n";
-        return -1;
+        return 1;
     }
+    std::cout << "Connected to server\n";
+    return clientSocket;
+}
+
+int sendMessage(int clientSocket,std::string message,int port_no = SOCKET_PORT){
     const char* msg = message.c_str();
-    send(clientSocket,msg,strlen(msg),0);
-    std::cout <<  "Connected!\n";
-    return 1;
+    if(send(clientSocket,msg,strlen(msg),0) >= 0){
+        std::cout <<  "Message Sent!\n";
+        return 1;
+    }
+    std::cerr << "Couldn't send message\n";
+    return -1;
+    
 }
 
 
@@ -246,9 +266,9 @@ std::string publicKeyToPEM(EVP_PKEY* publicKey) {
     return pemString;
 }
 
-void sendPublicKeyToServer(EVP_PKEY* publicKey,int port_no = SOCKET_PORT){
+void sendPublicKeyToServer(int clientSocket,EVP_PKEY* publicKey,int port_no = SOCKET_PORT){
     std::string pemKey = publicKeyToPEM(publicKey);
-    if(connectToServer(pemKey,port_no) < 0){
+    if(sendMessage(clientSocket,pemKey,port_no) < 0){
         std::cerr << "Couldn't Send Key to Server\n";
         return;
     }
