@@ -15,11 +15,11 @@
 
 int main(int argc, char **argv){
 	constexpr int max_client_count = 3;
-	int port_no = 8079;
+	int port_no = 8080;
 	
 	if (argc>1){
-		// this is probably not safe practice
-		port_no = atoi(argv[1]);
+		// this is probably not safe practice but whatever
+		port_no = atoi(argv[1]); // ./bin/server <port>
 	}
 	int server_sockfd;			// socket file descriptor 
 	sockaddr_in server_addr; 	// internet socket address descriptor 
@@ -74,7 +74,7 @@ int main(int argc, char **argv){
 		while(recv(conn, recv_buf, sizeof(recv_buf), 0) > 0 ){
 			std::cout << "recieved message:\n"<< recv_buf << "\n\nfrom client " << client_ip << ":" << ntohs(client_addr.sin_port) << std::endl;
 			memset(recv_buf, '\0', sizeof(recv_buf));
-			break;
+			
 		}
 	}
 

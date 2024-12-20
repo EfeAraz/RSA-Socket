@@ -6,7 +6,7 @@
 #include <iostream>
 #include <ostream>
 #include <string>
-// #include <fstream> // for file transfers 
+#include <fstream>
 #include <vector>
 #include <unistd.h>
 #include <sys/socket.h>
@@ -15,7 +15,6 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
  
-#define SOCKET_PORT 8080
 
 // Function declarations
 void handleOpenSSLError();
@@ -28,9 +27,16 @@ int sendMessage(int ClientSocket, std::string message, int port_no);
 std::string base64Encode(const std::vector<unsigned char>& input);
 std::vector<unsigned char> base64Decode(const std::string& base64Text);
 void sendPublicKeyToServer(int clientSocket,EVP_PKEY* publicKey,int port_no);
+std::vector<std::string> readFileIntoString(std::string &fileAddress);
+void savePublicKey(std::vector<std::string> publicKey,std::string fileAddress);
+
 
 int main(int argc,char** argv){
-    
+    int port = 8080;
+    if(argc>1){
+        port = atoi(argv[1]);
+    }   
+
     const std::string publicKeyFile = "./keys/public.pem"; 
     const std::string privateKeyFile = "./keys/private.pem";
     EVP_PKEY* publicKey = loadPublicKey(publicKeyFile);
@@ -39,49 +45,51 @@ int main(int argc,char** argv){
         std::cerr << "Error: something happened while reading key\n";
         return 1;
     }
-    int clientSocket = connectToServer(SOCKET_PORT); 
-    sendPublicKeyToServer(clientSocket,publicKey,SOCKET_PORT);
+    
+    int clientSocket = connectToServer(port); 
+    sendPublicKeyToServer(clientSocket,publicKey,port); 
     // get other person's public key from server 
-    std::string message = "hi guys :3";
 
-    while (true) {
-            std::string message;
-            std::cout << "Enter your message (type 'exit' to quit): ";
-            std::getline(std::cin, message);
 
-            if (message == "exit") {
-                break;
-            }
-    
-    std::vector<unsigned char> encrypted = encryptWithPublicKey(publicKey, message);  
-    std::string base64EncodedMessage = base64Encode(encrypted);
-    
-    /*
-    std::string hexEncryptedMessage;
-    for (unsigned char c : encrypted) {
-        char hexByte[3]; // Two characters for hex + null terminator
-        snprintf(hexByte, sizeof(hexByte), "%02x", c);
-        hexEncryptedMessage += hexByte;
-    }
-    std::cout << "\nEncrypted message in hex format: \n"; // base16 
-    std::cout << hexEncryptedMessage << std::endl;
-    */
-    /*
-    std::string decryptedMessage =  decryptWithPrivateKey(privateKey,encrypted);
-    std::cout << "\nDecrpyted message: " << decryptedMessage << std::endl;
-    */
+    while (true) {     // sending messages
+        std::string message = "";
+        std::cout << "Enter your message (type 'exit' to quit): ";
+        std::getline(std::cin, message);
 
-    std::cout << "\nEncrypted message in base64 format: \n"; // base16 
-    std::cout << base64EncodedMessage << std::endl;
-    
+        if (message == "exit") {
+            break;
+        }
 
-    
-    std::vector<unsigned char> base64DecodededMessage = base64Decode(base64EncodedMessage);
-    std::string decryptedMessage =  decryptWithPrivateKey(privateKey,base64DecodededMessage);
-    std::cout << "\nDecrpyted message: " << decryptedMessage << std::endl;
+        std::vector<unsigned char> encrypted = encryptWithPublicKey(publicKey, message);  
+        std::string base64EncodedMessage = base64Encode(encrypted);
+        
+        /*
+        std::string hexEncryptedMessage;
+        for (unsigned char c : encrypted) {
+            char hexByte[3]; // Two characters for hex + null terminator
+            snprintf(hexByte, sizeof(hexByte), "%02x", c);
+            hexEncryptedMessage += hexByte;
+        }
+        std::cout << "\nEncrypted message in hex format: \n"; // base16 
+        std::cout << hexEncryptedMessage << std::endl;
+        */
+        
+        /*
+        std::string decryptedMessage =  decryptWithPrivateKey(privateKey,encrypted);
+        std::cout << "\nDecrpyted message: " << decryptedMessage << std::endl;
+        */
 
-    sendMessage(clientSocket,base64EncodedMessage,SOCKET_PORT);
-    sleep(1);
+        std::cout << "\nEncrypted message in base64 format: \n"; // base16 
+        std::cout << base64EncodedMessage << std::endl;
+        
+
+        
+        std::vector<unsigned char> base64DecodededMessage = base64Decode(base64EncodedMessage);
+        std::string decryptedMessage =  decryptWithPrivateKey(privateKey,base64DecodededMessage);
+        std::cout << "\nDecrpyted message: " << decryptedMessage << std::endl;
+
+        sendMessage(clientSocket,base64EncodedMessage,port);
+        sleep(1);
     }
     close(clientSocket);
     EVP_PKEY_free(publicKey);
@@ -180,7 +188,7 @@ std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsign
     return std::string(decrypted.begin(), decrypted.end());
 }
 
-int connectToServer(int port_no = SOCKET_PORT){
+int connectToServer(int port_no){
     int clientSocket = socket(AF_INET ,SOCK_STREAM ,0);
     if(clientSocket == -1){
         std::cerr << "Socket Creation Failed\n";
@@ -200,7 +208,7 @@ int connectToServer(int port_no = SOCKET_PORT){
     return clientSocket;
 }
 
-int sendMessage(int clientSocket,std::string message,int port_no = SOCKET_PORT){
+int sendMessage(int clientSocket,std::string message,int port_no){
     const char* msg = message.c_str();
     if(send(clientSocket,msg,strlen(msg),0) >= 0){
         std::cout <<  "Message Sent!\n";
@@ -252,6 +260,7 @@ std::vector<unsigned char> base64Decode(const std::string& base64Text) {
     return decoded;
 }
 
+
 std::string publicKeyToPEM(EVP_PKEY* publicKey) {
     BIO* bio = BIO_new(BIO_s_mem());
     if (!PEM_write_bio_PUBKEY(bio, publicKey)) {
@@ -267,11 +276,38 @@ std::string publicKeyToPEM(EVP_PKEY* publicKey) {
     return pemString;
 }
 
-void sendPublicKeyToServer(int clientSocket,EVP_PKEY* publicKey,int port_no = SOCKET_PORT){
+
+void sendPublicKeyToServer(int clientSocket,EVP_PKEY* publicKey,int port_no){
     std::string pemKey = publicKeyToPEM(publicKey);
     if(sendMessage(clientSocket,pemKey,port_no) < 0){
         std::cerr << "Couldn't Send Key to Server\n";
         return;
     }
     std::cout << "Key Sent\n";
+}
+
+
+std::vector<std::string> readFileIntoString(std::string &fileAddress){
+    std::vector<std::string> output;
+    std::cout << "Reading: " << fileAddress << "\n" ;
+    std::ifstream fileStream(fileAddress);
+    std::string temp;
+    while(std::getline(fileStream,temp)){
+        output.push_back(temp);
+    }
+    std::cout << "File contents:\n";
+    for (const auto& line : output){
+        std::cout << line << std::endl;
+    }
+    return output;
+}
+
+void savePublicKey(std::vector<std::string> publicKey,std::string fileAddress){
+    
+    std::ofstream keyFile(fileAddress); // create file
+    keyFile.clear();
+     for (const auto& line :publicKey){
+        std::string text;
+        keyFile << line;
+    }
 }
