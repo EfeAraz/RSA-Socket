@@ -1,10 +1,9 @@
 ## TODO 
-- [x] Connect client to server and send messages  
-- [x] send encrypted messages to server  n
-- [x] send public key to server  
-- [ ] send public key from server to other client   
-- [ ] Protection against DoS and other types of attacks   
-- [ ] add salt to messages/keys
+- [ ] send public key from server to other client  
+- [ ] get public keys, save it and send it to other client
+- [ ] get public key from server
+- [ ] protection against DoS and other security related attacks  
+- [ ] add salt to messages/keys  
 ---
 # Description
 C++ Project that uses OpenSSL's high level cryptographic functions (evp) to encyrpt/decrypt messages and send/recieve messages using sockets    

@@ -32,7 +32,7 @@ EVP_PKEY* loadPrivateKey(const std::string& privateKeyFile);    // read private 
 void sendPublicKeyToServer(int clientSocket,EVP_PKEY* publicKey,int port_no);
 
 /*  NOT IMPLEMENTED YET
-// int connectToServer(std::string ipAdress, int port_no);
+* int connectToServer(std::string ipAdress, int port_no);
 * std::vector<std::string> readFileIntoString(std::string &fileAddress); 
 * void savePublicKey(std::vector<std::string> publicKey,std::string fileAddress); // get public key from server and save it into a variable
 * EVP_PKEY* savePublicKey(std::vector<std::string> publicKey,std::string fileAddress);
@@ -50,20 +50,18 @@ int main(int argc,char** argv){
     const std::string privateKeyFile = "./keys/private.pem";
     EVP_PKEY* privateKey = loadPrivateKey(privateKeyFile);
     const std::string publicKeyFile = "./keys/public.pem"; // get public key from server 
-    // send public key to server
-    // get public key from server
+    // get other public key from server
     EVP_PKEY* publicKey = loadPublicKey(publicKeyFile);
     if (!publicKey || !privateKey) {
         std::cerr << "Error: something happened while reading key\n";
         return 1;
     }
-    
     int clientSocket = connectToServer(port); 
     sendPublicKeyToServer(clientSocket,publicKey,port); 
-    // get other person's public key from server 
+    //     EVP_PKEY_free(publicKey); // free public key
 
-
-    while (true) {     // sending messages
+    // sending messages
+    while (true) {     
         std::string message = "";
         std::cout << "Enter your message (type 'exit' to quit): ";
         std::getline(std::cin, message);
