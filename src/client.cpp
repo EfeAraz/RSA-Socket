@@ -16,31 +16,43 @@
 #include <openssl/err.h>
  
 
-// Function declarations
-void handleOpenSSLError();
-EVP_PKEY* loadPublicKey(const std::string& publicKeyFile);
-EVP_PKEY* loadPrivateKey(const std::string& privateKeyFile);
-std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKey,const std::string& text);
-std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsigned char>& encryptedText);
-int connectToServer(int port_no);
-int sendMessage(int ClientSocket, std::string message, int port_no);
-std::string base64Encode(const std::vector<unsigned char>& input);
+// FUNCTION DECLARATIONS 
+int connectToServer(int port_no); // returns socket/file descriptor upon successful completion, otherwise returns -1  
+int sendMessage(int ClientSocket, std::string message, int port_no); // returns -1 upon fail
+std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKey,const std::string& text); // returns encrypted message in binary format  
+std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsigned char>& encryptedText); // binary ->  
+std::string base64Encode(const std::vector<unsigned char>& binary); // binary -> base64
 std::vector<unsigned char> base64Decode(const std::string& base64Text);
+std::string publicKeyToPEMString(EVP_PKEY* publicKey); // public key file contents -> public pem key
+
+// Don't modify the functions under this line if you're not especially using with them 
+void handleOpenSSLError(); // core dump
+EVP_PKEY* loadPublicKey(const std::string& publicKeyFile);      // delete this function after implementing savePublicKey
+EVP_PKEY* loadPrivateKey(const std::string& privateKeyFile);    // read private key into openssl's private key data structure
 void sendPublicKeyToServer(int clientSocket,EVP_PKEY* publicKey,int port_no);
-std::vector<std::string> readFileIntoString(std::string &fileAddress);
-void savePublicKey(std::vector<std::string> publicKey,std::string fileAddress);
+
+/*  NOT IMPLEMENTED YET
+// int connectToServer(std::string ipAdress, int port_no);
+* std::vector<std::string> readFileIntoString(std::string &fileAddress); 
+* void savePublicKey(std::vector<std::string> publicKey,std::string fileAddress); // get public key from server and save it into a variable
+* EVP_PKEY* savePublicKey(std::vector<std::string> publicKey,std::string fileAddress);
+*/
+// FUNCTION DECLARATIONS END
 
 
 int main(int argc,char** argv){
-    int port = 8080;
+
+    int port = 8080; // default
     if(argc>1){
         port = atoi(argv[1]);
     }   
 
-    const std::string publicKeyFile = "./keys/public.pem"; 
     const std::string privateKeyFile = "./keys/private.pem";
-    EVP_PKEY* publicKey = loadPublicKey(publicKeyFile);
     EVP_PKEY* privateKey = loadPrivateKey(privateKeyFile);
+    const std::string publicKeyFile = "./keys/public.pem"; // get public key from server 
+    // send public key to server
+    // get public key from server
+    EVP_PKEY* publicKey = loadPublicKey(publicKeyFile);
     if (!publicKey || !privateKey) {
         std::cerr << "Error: something happened while reading key\n";
         return 1;
@@ -98,10 +110,153 @@ int main(int argc,char** argv){
 }
 
 
+int connectToServer(int port_no){
+    int clientSocket = socket(AF_INET ,SOCK_STREAM ,0);
+    if(clientSocket == -1){
+        std::cerr << "Socket Creation Failed\n";
+        return 1;
+    }
+
+    sockaddr_in serverAddress;
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_port = htons(port_no);
+    serverAddress.sin_addr.s_addr = INADDR_ANY;
+    int connection = connect(clientSocket ,reinterpret_cast<sockaddr*>(&serverAddress), sizeof(serverAddress));
+    if(connection == -1){
+        std::cerr << "Connection failed\n";
+        return 1;
+    }
+    std::cout << "Connected to server\n";
+    return clientSocket;
+}
+
+
+int sendMessage(int clientSocket,std::string message,int port_no){
+    const char* msg = message.c_str();
+    if(send(clientSocket,msg,strlen(msg),0) >= 0){
+        std::cout <<  "Message Sent!\n";
+        return 1;
+    }
+    std::cerr << "Couldn't send message\n";
+    return -1;
+}
+
+
+std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKey,const std::string& text){
+    // allocate memory for key context, read it 
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(publicKey, nullptr);
+    //if can't allocate throw error 
+    if (!ctx)
+         handleOpenSSLError(); 
+    // if can't initialize encryption throw error
+    if (EVP_PKEY_encrypt_init(ctx) <= 0)
+         handleOpenSSLError();
+
+    size_t outlen = 0; // buffer size
+    //determine buffer size for the decyrpted output, if failed to determine throw error
+    if(EVP_PKEY_encrypt(ctx, nullptr ,&outlen, reinterpret_cast<const unsigned char*>(text.c_str()),text.length()) <= 0){
+        handleOpenSSLError();
+    }
+    std::vector<unsigned char> encrypted(outlen);  
+
+    // decryption
+    if (EVP_PKEY_encrypt(ctx, encrypted.data(), &outlen, reinterpret_cast<const unsigned char*>(text.c_str()), text.size()) <= 0){
+        handleOpenSSLError();
+    }   
+    // free memory
+    EVP_PKEY_CTX_free(ctx);
+    return encrypted;
+}
+
+
+std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsigned char>& encryptedText) {
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(privateKey, nullptr);  // read key 
+    // if can't read the key throw error
+    if (!ctx) 
+        handleOpenSSLError();
+    // if can't initialize decryption throw error
+    if (EVP_PKEY_decrypt_init(ctx) <= 0)
+        handleOpenSSLError();
+
+    size_t outlen = 0;
+    // determine buffer size for the decrypted output
+    if (EVP_PKEY_decrypt(ctx, nullptr, &outlen, encryptedText.data(), encryptedText.size()) <= 0)
+        handleOpenSSLError();
+
+    std::vector<unsigned char> decrypted(outlen);
+
+    // decryption
+    if (EVP_PKEY_decrypt(ctx, decrypted.data(), &outlen, encryptedText.data(), encryptedText.size()) <= 0)
+        handleOpenSSLError();
+
+    EVP_PKEY_CTX_free(ctx); 
+
+    return std::string(decrypted.begin(), decrypted.end());
+}
+
+
+std::string base64Encode(const std::vector<unsigned char>& binary) {
+    BIO* bio = BIO_new(BIO_s_mem());
+    BIO* b64 = BIO_new(BIO_f_base64());
+    bio = BIO_push(b64, bio);
+
+    // Disable newline breaks in Base64 encoding
+    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
+
+    BIO_write(bio, binary.data(), binary.size());
+    BIO_flush(bio);
+
+    char* encoded;
+    long encodedLen = BIO_get_mem_data(bio, &encoded);
+    std::string result(encoded, encodedLen);
+
+    BIO_free_all(bio);
+    return result;
+}
+
+
+std::vector<unsigned char> base64Decode(const std::string& base64Text) {
+    BIO* bio = BIO_new_mem_buf(base64Text.data(), base64Text.size());
+    BIO* b64 = BIO_new(BIO_f_base64());
+    bio = BIO_push(b64, bio);
+
+    // Disable newline breaks in Base64 decoding
+    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
+
+    std::vector<unsigned char> decoded(base64Text.size());
+    int decodedLength = BIO_read(bio, decoded.data(), base64Text.size());
+    if (decodedLength <= 0) {
+        BIO_free_all(bio);
+        std::cerr << "Failed to decode Base64";
+    }
+
+    decoded.resize(decodedLength);
+    BIO_free_all(bio);
+    return decoded;
+}
+
+
+std::string publicKeyToPEMString(EVP_PKEY* publicKey) {
+    BIO* bio = BIO_new(BIO_s_mem());
+    if (!PEM_write_bio_PUBKEY(bio, publicKey)) {
+        BIO_free(bio);
+        std::cerr << "Failed to convert public key into string format\n";
+    }
+    char* pemData;
+    long pemLength = BIO_get_mem_data(bio, &pemData);
+    std::string pemString(pemData, pemLength);
+
+    BIO_free(bio);
+    return pemString;
+}
+
+
+// Don't modify the functions under this line if you're not especially using with them 
 void handleOpenSSLError(){
     ERR_print_errors_fp(stderr);
     abort();
 }
+
 
 EVP_PKEY* loadPublicKey(const std::string& publicKeyFile){
     FILE* fp = fopen(publicKeyFile.c_str(), "r");
@@ -140,145 +295,8 @@ EVP_PKEY* loadPrivateKey(const std::string& privateKeyFile){
 }
 
 
-std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKey,const std::string& text){
-    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(publicKey, nullptr);
-    if (!ctx) handleOpenSSLError();
-
-    if (EVP_PKEY_encrypt_init(ctx) <= 0) handleOpenSSLError();
-    
-    size_t outlen = 0;
-
-    //determine buffer size for the encrypted output
-    if(EVP_PKEY_encrypt(ctx, nullptr ,&outlen, reinterpret_cast<const unsigned char*>(text.c_str()),text.length()) <= 0){
-        handleOpenSSLError();
-    }
-    std::vector<unsigned char> encrypted(outlen);  
-
-    // encryption
-    if (EVP_PKEY_encrypt(ctx, encrypted.data(), &outlen, reinterpret_cast<const unsigned char*>(text.c_str()), text.size()) <= 0){
-        handleOpenSSLError();
-    }   
-
-    EVP_PKEY_CTX_free(ctx);
-
-    return encrypted;
-}
-
-
-std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsigned char>& encryptedText) {
-    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(privateKey, nullptr);
-    if (!ctx) handleOpenSSLError();
-
-    if (EVP_PKEY_decrypt_init(ctx) <= 0) handleOpenSSLError();
-
-    size_t outlen = 0;
-
-    // determine buffer size for the decrypted output
-    if (EVP_PKEY_decrypt(ctx, nullptr, &outlen, encryptedText.data(), encryptedText.size()) <= 0)
-        handleOpenSSLError();
-
-    std::vector<unsigned char> decrypted(outlen);
-
-    // decryption
-    if (EVP_PKEY_decrypt(ctx, decrypted.data(), &outlen, encryptedText.data(), encryptedText.size()) <= 0)
-        handleOpenSSLError();
-
-    EVP_PKEY_CTX_free(ctx); 
-
-    return std::string(decrypted.begin(), decrypted.end());
-}
-
-int connectToServer(int port_no){
-    int clientSocket = socket(AF_INET ,SOCK_STREAM ,0);
-    if(clientSocket == -1){
-        std::cerr << "Socket Creation Failed\n";
-        return 1;
-    }
-
-    sockaddr_in serverAddress;
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(port_no);
-    serverAddress.sin_addr.s_addr = INADDR_ANY;
-    int connection = connect(clientSocket ,reinterpret_cast<sockaddr*>(&serverAddress), sizeof(serverAddress));
-    if(connection == -1){
-        std::cerr << "Connection failed\n";
-        return 1;
-    }
-    std::cout << "Connected to server\n";
-    return clientSocket;
-}
-
-int sendMessage(int clientSocket,std::string message,int port_no){
-    const char* msg = message.c_str();
-    if(send(clientSocket,msg,strlen(msg),0) >= 0){
-        std::cout <<  "Message Sent!\n";
-        return 1;
-    }
-    std::cerr << "Couldn't send message\n";
-    return -1;
-    
-}
-
-
-std::string base64Encode(const std::vector<unsigned char>& input) {
-    BIO* bio = BIO_new(BIO_s_mem());
-    BIO* b64 = BIO_new(BIO_f_base64());
-    bio = BIO_push(b64, bio);
-
-    // Disable newline breaks in Base64 encoding
-    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
-
-    BIO_write(bio, input.data(), input.size());
-    BIO_flush(bio);
-
-    char* encoded;
-    long encodedLen = BIO_get_mem_data(bio, &encoded);
-    std::string result(encoded, encodedLen);
-
-    BIO_free_all(bio);
-    return result;
-}
-
-
-std::vector<unsigned char> base64Decode(const std::string& base64Text) {
-    BIO* bio = BIO_new_mem_buf(base64Text.data(), base64Text.size());
-    BIO* b64 = BIO_new(BIO_f_base64());
-    bio = BIO_push(b64, bio);
-
-    // Disable newline breaks in Base64 decoding
-    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
-
-    std::vector<unsigned char> decoded(base64Text.size());
-    int decodedLength = BIO_read(bio, decoded.data(), base64Text.size());
-    if (decodedLength <= 0) {
-        BIO_free_all(bio);
-        std::cerr << "Failed to decode Base64";
-    }
-
-    decoded.resize(decodedLength);
-    BIO_free_all(bio);
-    return decoded;
-}
-
-
-std::string publicKeyToPEM(EVP_PKEY* publicKey) {
-    BIO* bio = BIO_new(BIO_s_mem());
-    if (!PEM_write_bio_PUBKEY(bio, publicKey)) {
-        BIO_free(bio);
-        std::cerr << "Failed to convert public key to PEM format\n";
-    }
-
-    char* pemData;
-    long pemLength = BIO_get_mem_data(bio, &pemData);
-    std::string pemString(pemData, pemLength);
-
-    BIO_free(bio);
-    return pemString;
-}
-
-
 void sendPublicKeyToServer(int clientSocket,EVP_PKEY* publicKey,int port_no){
-    std::string pemKey = publicKeyToPEM(publicKey);
+    std::string pemKey = publicKeyToPEMString(publicKey);
     if(sendMessage(clientSocket,pemKey,port_no) < 0){
         std::cerr << "Couldn't Send Key to Server\n";
         return;
@@ -286,6 +304,7 @@ void sendPublicKeyToServer(int clientSocket,EVP_PKEY* publicKey,int port_no){
     std::cout << "Key Sent\n";
 }
 
+// THINGS THAT ARE NOT IMPLEMENTED YET
 
 std::vector<std::string> readFileIntoString(std::string &fileAddress){
     std::vector<std::string> output;
@@ -301,6 +320,7 @@ std::vector<std::string> readFileIntoString(std::string &fileAddress){
     }
     return output;
 }
+
 
 void savePublicKey(std::vector<std::string> publicKey,std::string fileAddress){
     
