@@ -1,7 +1,3 @@
-/* TO-DO
- *  - Get the public key from server and save it to a file
- *  - Send sender info to server
- */
 #include <cstdio>
 #include <iostream>
 #include <ostream>
@@ -36,6 +32,7 @@ void sendPublicKeyToServer(int clientSocket,EVP_PKEY* publicKey,int port_no);
 * std::vector<std::string> readFileIntoString(std::string &fileAddress); 
 * void savePublicKey(std::vector<std::string> publicKey,std::string fileAddress); // get public key from server and save it into a variable
 * EVP_PKEY* savePublicKey(std::vector<std::string> publicKey,std::string fileAddress);
+*
 */
 // FUNCTION DECLARATIONS END
 
@@ -48,9 +45,8 @@ int main(int argc,char** argv){
     }   
 
     const std::string privateKeyFile = "./keys/private.pem";
+    const std::string publicKeyFile = "./keys/public.pem";  // send this key to server 
     EVP_PKEY* privateKey = loadPrivateKey(privateKeyFile);
-    const std::string publicKeyFile = "./keys/public.pem"; // get public key from server 
-    // get other public key from server
     EVP_PKEY* publicKey = loadPublicKey(publicKeyFile);
     if (!publicKey || !privateKey) {
         std::cerr << "Error: something happened while reading key\n";
@@ -58,7 +54,8 @@ int main(int argc,char** argv){
     }
     int clientSocket = connectToServer(port); 
     sendPublicKeyToServer(clientSocket,publicKey,port); 
-    //     EVP_PKEY_free(publicKey); // free public key
+    //     EVP_PKEY_free(publicKey); // free the local public key
+    //  recieve other public key from server 
 
     // sending messages
     while (true) {     
@@ -72,24 +69,8 @@ int main(int argc,char** argv){
 
         std::vector<unsigned char> encrypted = encryptWithPublicKey(publicKey, message);  
         std::string base64EncodedMessage = base64Encode(encrypted);
-        
-        /*
-        std::string hexEncryptedMessage;
-        for (unsigned char c : encrypted) {
-            char hexByte[3]; // Two characters for hex + null terminator
-            snprintf(hexByte, sizeof(hexByte), "%02x", c);
-            hexEncryptedMessage += hexByte;
-        }
-        std::cout << "\nEncrypted message in hex format: \n"; // base16 
-        std::cout << hexEncryptedMessage << std::endl;
-        */
-        
-        /*
-        std::string decryptedMessage =  decryptWithPrivateKey(privateKey,encrypted);
-        std::cout << "\nDecrpyted message: " << decryptedMessage << std::endl;
-        */
 
-        std::cout << "\nEncrypted message in base64 format: \n"; // base16 
+        std::cout << "\nEncrypted message in base64 format: \n"; 
         std::cout << base64EncodedMessage << std::endl;
         
 
