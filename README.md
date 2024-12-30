@@ -21,21 +21,19 @@ You can use your existing [OpenSSL compatible](https://wiki.openssl.org/index.ph
 
 # Setting up for the first time
 ```bash 
-git clone git@github.com:EfeAraz/RSA-Socket;  
+git clone https://github.com/EfeAraz/RSA-Socket;  
 chmod +x setup.sh keygen.sh;  
 ./setup.sh;  
 ```
 
 ## Client :
 ```bash
-g++ ./src/client.cpp -o ./bin/client -lssl -lcrypto;
-./bin/client 8080;  
+ g++ ./src/client.cpp -o ./bin/client -lssl -lcrypto;./bin/client 8080; 
 ```  
 
 ## Server :
 ```bash
-g++ ./src/server.cpp -o ./bin/server;  
-./bin/server 8080;
+g++ ./src/server.cpp -o ./bin/server;./bin/server 8080;
 ```
 ---
 ### References:
