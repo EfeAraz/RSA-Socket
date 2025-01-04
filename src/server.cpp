@@ -8,7 +8,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h> //close()
-
+#include "socket_utils.h"
+#include "message_utils.h"
+#include "cryption_utils.h"
 	// #define AF_INET PF_INET -> They are same
     // AF_INET: Address Format_Internet = IP Addresses ()
     // PF_INET: Packet Format_Internet = IP, TCP/IP or UDP/IP 

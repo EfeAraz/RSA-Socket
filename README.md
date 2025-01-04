@@ -20,21 +20,25 @@ You can use your existing [OpenSSL compatible](https://wiki.openssl.org/index.ph
 - OPENSSL
 
 # Setting up for the first time
+#### install openssl from your package manager  
 ```bash 
 git clone https://github.com/EfeAraz/RSA-Socket;  
 chmod +x setup.sh keygen.sh;  
-./setup.sh;  
+./setup.sh;   
 ```
-
-## Client :
-```bash
- g++ ./src/client.cpp -o ./bin/client -lssl -lcrypto;./bin/client 8080; 
-```  
 
 ## Server :
 ```bash
 g++ ./src/server.cpp -o ./bin/server;./bin/server 8080;
 ```
+
+## Client :
+example code for localhost:
+```bash
+ g++ ./src/client.cpp -o ./bin/client -lssl -lcrypto;./bin/client 127.0.0.1 8080; 
+```  
+
+
 ---
 ### References:
 - man command for manuals  
