@@ -1,11 +1,9 @@
 ## TODO 
-- [ ] connection.h  
-- [ ] cryption?.h
-- [ ] logs
 - [ ] send public key from server to other client  
-- [ ] get public keys, save it and send it to other client
-- [ ] get public key from server
+- [ ] get public keys, save it and send it to other client  
+- [ ] get public key from server  
 - [ ] implement other settings like file transfer  
+- [ ] logs  
 - [ ] add salt to messages/keys  
 - [ ] protection against DoS and other security related attacks  
 
@@ -33,9 +31,9 @@ g++ ./src/server.cpp -o ./bin/server;./bin/server 8080;
 ```
 
 ## Client :
-example code for localhost:
+for localhost:
 ```bash
- g++ ./src/client.cpp -o ./bin/client -lssl -lcrypto;./bin/client 127.0.0.1 8080; 
+g++ ./src/client.cpp -o ./bin/client -lssl -lcrypto;./bin/client 127.0.0.1 8080; 
 ```  
 
 
@@ -46,7 +44,5 @@ example code for localhost:
 - [stackoverflow rsa encryption using keys](https://stackoverflow.com/questions/73631293/how-to-encrypt-a-string-using-openssl-c-library-and-a-public-key-file)    
 - [Openssl docs](https://docs.openssl.org/master/man3/)  
 - [communication protocols cpp implementations](https://commschamp.github.io/comms_protocols_cpp/)  
-
-
 ---
 ### **This project is licensed under the terms of the MIT license.**  

@@ -1,5 +1,3 @@
-#include <iostream>
-#include <unistd.h>
 #include <ctime>
 #include "socket_utils.h"
 #include "cryption_utils.h"
@@ -7,18 +5,10 @@
 
 int port = 8080;
 std::string serverIP = "192.168.1.1"; 
-int clientSocket = -1;
 
 const std::string privateKeyFile = "./keys/private.pem";
 const std::string publicKeyFile = "./keys/public.pem"; 
 const std::string otherPublicKeyFile = "./keys/public.pem"; // get this key from server
-
-
-/*  NOT IMPLEMENTED YET
-* std::vector<std::string> readFileIntoString(std::string &fileAddress); 
-* void savePublicKey(std::vector<std::string> publicKey,std::string fileAddress); // get public key from server and save it into a variable
-* EVP_PKEY* savePublicKey(std::vector<std::string> publicKey,std::string fileAddress);
-*/
 
 int main(int argc,char** argv){
     if(argc!=3){
@@ -32,7 +22,7 @@ int main(int argc,char** argv){
     port = atoi(argv[2]);
 
     // connect to the server
-    clientSocket = connectToServer(serverIP,port);
+    int clientSocket = connectToServer(serverIP,port);
     if(clientSocket == -1){
         std::cerr << "Error while setting up client socket\n";
         return 1;
@@ -53,7 +43,6 @@ int main(int argc,char** argv){
     sendPublicKeyToServer(clientSocket, publicKey, port);
     
     //  recieve other public key from server 
-
     try{
         while (true) {     
             std::string message = "";
