@@ -1,9 +1,9 @@
 ## TODO 
-- [ ] send public key from server to other client  
-- [ ] get public keys, save it and send it to other client  
-- [ ] get public key from server  
+- [ ] set/get usernames for clients  
+- [ ] save files to server and send it later to clients  
 - [ ] implement other settings like file transfer  
 - [ ] logs  
+- [ ] save functions to header files  
 - [ ] add salt to messages/keys  
 - [ ] protection against DoS and other security related attacks  
 

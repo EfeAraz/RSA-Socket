@@ -5,6 +5,13 @@
 #include "cryption_utils.h"
 #include <fstream>
 
+class client{
+    public:
+        std::string name;
+        int conn;
+    private:
+};
+
 extern inline std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKey,const std::string& text){
     // read key content  
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(publicKey, nullptr);
@@ -89,18 +96,42 @@ extern inline std::vector<std::string> readFileContent(std::string &fileAddress)
     return output;
 }
 
-extern inline void savePublicKey(std::vector<std::string> publicKey,std::string fileAddress){
-    
-    std::ofstream keyFile(fileAddress); // create file
-    keyFile.clear();
-     for (const auto& line :publicKey){
-        std::string text;
-        keyFile << line;
+extern inline void recvPublicKeyFromServer(std::string &otherPublicKeyFileLocation,int clientSocket){
+    size_t buffer_size = 65536;
+    char *recv_buf = new char[buffer_size]; // buffer  2^16 because why not  
+
+    if(recv(clientSocket,recv_buf,buffer_size,0) > 0){
+        //read keys
+        std::string otherPublicKey = recv_buf;
+        std::cout << "Read key from server\n";
+        // save keys into file
+        std::fstream otherPublicKeyFile(otherPublicKeyFileLocation,std::fstream::in | std::fstream::out); // read & write into file
+        if(!otherPublicKeyFile){
+            std::cerr << "Unable to open other public key file\n";
+        }
+        else{
+            otherPublicKeyFile << otherPublicKey << std::endl;
+            std::cout << "Saved key into " << otherPublicKeyFileLocation << "\n";
+            otherPublicKeyFile.close();
+        }        
     }
+    else{
+        std::cerr << "Failed to recieve the key from server\n";
+    }
+    free(recv_buf);
 }
 
-extern inline void logMessage(std::string logMessage){
-
+extern inline void logMessage(std::string& logMessage,std::string& logLocation){
+    std::fstream f;
+    f.open(logLocation,std::ios::app);
+    if(!f){
+        std::cerr << "log file is not found";
+    }
+    else{
+        f << logMessage;
+        std::cout << "log successfull \n";
+        f.close();
+    }
 }
 
 #endif

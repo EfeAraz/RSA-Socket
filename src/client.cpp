@@ -3,9 +3,9 @@
 #include "cryption_utils.h"
 #include "message_utils.h"
 
-const std::string privateKeyFile = "./keys/private.pem";
-const std::string publicKeyFile = "./keys/public.pem"; 
-const std::string otherPublicKeyFile = "./keys/public.pem"; // get this key from server
+const std::string privateKeyFileLocation = "./keys/private.pem";
+const std::string publicKeyFileLocation = "./keys/public.pem"; 
+std::string otherPublicKeyFileLocation = "./keys/otherpublic.pem"; // get this key's name from server 
 
 int main(int argc,char** argv){
     // get ip & port from command line arguments
@@ -25,20 +25,32 @@ int main(int argc,char** argv){
     }
 
     // load keys
-    EVP_PKEY* privateKey = loadPrivateKey(privateKeyFile);
-    EVP_PKEY* publicKey = loadPublicKey(publicKeyFile);
+    EVP_PKEY* privateKey = loadPrivateKey(privateKeyFileLocation);
+    EVP_PKEY* publicKey = loadPublicKey(publicKeyFileLocation);
     if (!publicKey || !privateKey) {
-        std::cerr << "Error: Failed while reading key\n";
+        std::cerr << "Error: Failed while reading public/private key\n";
         close(clientSocket);
         EVP_PKEY_free(publicKey);
         EVP_PKEY_free(privateKey); 
         return 1;
     }
 
-
+    // send public key to server, then delete it
     sendPublicKeyToServer(publicKey,clientSocket);
+    EVP_PKEY_free(publicKey);
+    //recieve public key from server
+    recvPublicKeyFromServer(otherPublicKeyFileLocation,clientSocket);
+    //read the public key which we'll use to  
+    EVP_PKEY* pbKey = loadPublicKey(otherPublicKeyFileLocation);
+    if (!pbKey) {
+        std::cerr << "Error: Failed while reading other key\n";
+        close(clientSocket);
+        EVP_PKEY_free(pbKey);
+        return 1;
+    }
+    std::cout << "read other key from file\n";
     
-    //  recieve other public key from server 
+    // send encrypted messages to server
     while (true) {     
         try{
             std::string message = "";
@@ -48,7 +60,7 @@ int main(int argc,char** argv){
             if (message == "exit") {
                 break;
             }
-            std::vector<unsigned char> encryptedMessage = encryptWithPublicKey(publicKey, message);  
+            std::vector<unsigned char> encryptedMessage = encryptWithPublicKey(pbKey, message);  
             std::string base64MessageEncrypted = base64Encode(encryptedMessage);
             std::cout << "\nEncrypted message in base64 format:\n" << base64MessageEncrypted << "\n";
             sendMessage(clientSocket,base64MessageEncrypted);
@@ -58,8 +70,10 @@ int main(int argc,char** argv){
             std::cerr << "An error occured " << e.what() << "\n";
         }
     }
+
+    // after exit free/close everything
     close(clientSocket);
-    EVP_PKEY_free(publicKey);
+    EVP_PKEY_free(pbKey);
     EVP_PKEY_free(privateKey);
     std::cout << "Cleanup complete!\n";
     return 0;
