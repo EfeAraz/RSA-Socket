@@ -3,28 +3,7 @@
 
 #include "socket_utils.h"
 #include "cryption_utils.h"
-#include <cstring>
 #include <fstream>
-
-extern inline int sendMessage(int clientSocket,std::string message){
-    const char* msg = message.c_str();
-    if(send(clientSocket,msg,strlen(msg),0) >= 0){
-        std::cout <<  "Message Sent!\n";
-        return 1;
-    }
-    std::cerr << "Couldn't send message\n";
-    return -1;
-}
-
-extern inline void sendPublicKeyToServer(int clientSocket,EVP_PKEY* publicKey,int port_no){
-    std::string pemKey = publicKeyToPEMString(publicKey);
-    if(sendMessage(clientSocket,pemKey) < 0){
-        std::cerr << "Couldn't Send Key to Server\n";
-        return;
-    }
-    std::cout << "Key Sent\n";
-}
-
 
 extern inline std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKey,const std::string& text){
     // read key content  
@@ -76,6 +55,25 @@ extern inline std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std:
     EVP_PKEY_CTX_free(ctx); 
 
     return std::string(decrypted.begin(), decrypted.end());
+}
+
+extern inline int sendMessage(int clientSocket,std::string message){
+    const char* msg = message.c_str();
+    if(send(clientSocket,msg,strlen(msg),0) >= 0){
+        std::cout <<  "Message Sent!\n";
+        return 1;
+    }
+    std::cerr << "Couldn't send message\n";
+    return -1;
+}
+
+extern inline void sendPublicKeyToServer(EVP_PKEY* publicKey,int clientSocket){
+    std::string pemKey = publicKeyToPEMString(publicKey);
+    if(sendMessage(clientSocket,pemKey) < 0){
+        std::cerr << "Couldn't Send Key to Server\n";
+        return;
+    }
+    std::cout << "Key Sent\n";
 }
 
 extern inline std::vector<std::string> readFileContent(std::string &fileAddress){

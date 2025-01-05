@@ -3,25 +3,21 @@
 #include "cryption_utils.h"
 #include "message_utils.h"
 
-int port = 8080;
-std::string serverIP = "192.168.1.1"; 
-
 const std::string privateKeyFile = "./keys/private.pem";
 const std::string publicKeyFile = "./keys/public.pem"; 
 const std::string otherPublicKeyFile = "./keys/public.pem"; // get this key from server
 
 int main(int argc,char** argv){
+    // get ip & port from command line arguments
+    // probably not safe
     if(argc!=3){
         std::cerr << "Correct Usage: " << argv[0] << " ip_adress port_no\n";
         return 1;
     }   
-    
-    // read inputs
-    // probably not safe
-    serverIP = argv[1];
-    port = atoi(argv[2]);
+    std::string serverIP = argv[1];
+    int port = atoi(argv[2]);
 
-    // connect to the server
+    // create socket file descriptor
     int clientSocket = connectToServer(serverIP,port);
     if(clientSocket == -1){
         std::cerr << "Error while setting up client socket\n";
@@ -40,11 +36,11 @@ int main(int argc,char** argv){
     }
 
 
-    sendPublicKeyToServer(clientSocket, publicKey, port);
+    sendPublicKeyToServer(publicKey,clientSocket);
     
     //  recieve other public key from server 
-    try{
-        while (true) {     
+    while (true) {     
+        try{
             std::string message = "";
             std::cout << "Enter your message (type 'exit' to quit): ";
             std::getline(std::cin, message);
@@ -58,9 +54,9 @@ int main(int argc,char** argv){
             sendMessage(clientSocket,base64MessageEncrypted);
             sleep(1);
         }
-    }
-    catch(const std::exception& e){
-        std::cerr << "An error occured " << e.what() << "\n";
+        catch(const std::exception& e){
+            std::cerr << "An error occured " << e.what() << "\n";
+        }
     }
     close(clientSocket);
     EVP_PKEY_free(publicKey);
