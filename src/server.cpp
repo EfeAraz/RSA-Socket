@@ -14,27 +14,30 @@ int main(int argc, char **argv){
 	socklen_t length = sizeof(client_addr);
 	
 	bool keyACK = false;
-	std::vector<std::string> keys(2);
 
-	char recv_buf[65536] = {0 }; // buffer  2^16 because why not  
+	char recv_buf[65536] = { 0 }; // buffer  2^16 because why not  
+	int client_count = 0;
+	std::vector<client> clients(max_client_count);
+
 	while(true) {
 		try{
-			// connect to another socket 
 			int conn = accept(server_sockfd, (sockaddr*)&client_addr,&length);
 			if(conn<0) {
-				std::cerr << "couldn't connect";
+				std::cerr << "couldn't connect\n";
 				close(server_sockfd);
-				return -1;
+				return -1;	
 			}
 
 			std::cout << "new client accepted.\n" << std::endl;
+			client_count += 1;
 			// https://beej.us/guide/bgnet/html/split/ip-addresses-structs-and-data-munging.html#:~:text=network%20to%20printable
 			char client_ip[INET_ADDRSTRLEN] = "";
 			inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
 
 			while(recv(conn, recv_buf, sizeof(recv_buf), 0) > 0 ){
 				if(!keyACK){
-					keys[0] = recv_buf;
+					std::cout << "Recieving key\n";
+					clients[client_count - 1].key = recv_buf;
 					std::cout << "Key recieved\n";
 					keyACK = true;
 					if(send(conn,recv_buf,sizeof(recv_buf),0) < 0){
