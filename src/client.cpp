@@ -5,10 +5,11 @@
 
 const std::string privateKeyFileLocation = "./keys/private.pem";
 const std::string publicKeyFileLocation = "./keys/public.pem"; 
-std::string otherPublicKeyFileLocation = "./keys/otherpublic.pem"; // get this key's name from server 
+std::string otherPublicKeyFileLocation = "./keys/asdasdas.pem"; // get this key's name from server 
+std::string logger = "/tmp/RSA-socket.log";
 
 int main(int argc,char** argv){
-    // get ip & port from command line arguments
+    // get ip & port from command line argumentss
     // probably not safe
     if(argc!=3){
         std::cerr << "Correct Usage: " << argv[0] << " ip_adress port_no\n";
@@ -16,7 +17,7 @@ int main(int argc,char** argv){
     }   
     std::string serverIP = argv[1];
     int port = atoi(argv[2]);
-
+    logMessage("started logging at location: " + logger ,logger);
     // create socket file descriptor
     int clientSocket = connectToServer(serverIP,port);
     if(clientSocket == -1){
@@ -35,7 +36,7 @@ int main(int argc,char** argv){
         return 1;
     }
 
-    // send public key to server, then delete it
+    // send public key to server, then free memory
     sendPublicKeyToServer(publicKey,clientSocket);
     EVP_PKEY_free(publicKey);
     //recieve public key from server
@@ -45,7 +46,6 @@ int main(int argc,char** argv){
     if (!pbKey) {
         std::cerr << "Error: Failed while reading other key\n";
         close(clientSocket);
-        EVP_PKEY_free(pbKey);
         return 1;
     }
     std::cout << "read other key from file\n";

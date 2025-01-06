@@ -63,6 +63,60 @@ extern inline EVP_PKEY* loadPrivateKey(const std::string& privateKeyFile){
     return privateKey;
 }   
 
+
+extern inline std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKey,const std::string& text){
+    // read key content  
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(publicKey, nullptr);
+    //if can't allocate throw error 
+    if (!ctx)
+         handleOpenSSLError(); 
+    // if can't initialize encryption throw error
+    if (EVP_PKEY_encrypt_init(ctx) <= 0)
+         handleOpenSSLError();
+
+    size_t outlen = 0; // buffer size
+    //determine buffer size for the decyrpted output, if failed to determine throw error
+    if(EVP_PKEY_encrypt(ctx, nullptr ,&outlen, reinterpret_cast<const unsigned char*>(text.c_str()),text.length()) <= 0){
+        handleOpenSSLError();
+    }
+    std::vector<unsigned char> encrypted(outlen);  
+
+    // decryption
+    if (EVP_PKEY_encrypt(ctx, encrypted.data(), &outlen, reinterpret_cast<const unsigned char*>(text.c_str()), text.size()) <= 0){
+        handleOpenSSLError();
+    }   
+    // free memory
+    EVP_PKEY_CTX_free(ctx);
+    return encrypted;
+}
+
+
+extern inline std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsigned char>& encryptedText) {
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(privateKey, nullptr);  // key context 
+    // if can't read the key throw error
+    if (!ctx) 
+        handleOpenSSLError();
+    // if can't initialize decryption throw error
+    if (EVP_PKEY_decrypt_init(ctx) <= 0)
+        handleOpenSSLError();
+
+    size_t outlen = 0;
+    // determine buffer size for the decrypted output
+    if (EVP_PKEY_decrypt(ctx, nullptr, &outlen, encryptedText.data(), encryptedText.size()) <= 0)
+        handleOpenSSLError();
+
+    std::vector<unsigned char> decrypted(outlen);
+
+    // decryption
+    if (EVP_PKEY_decrypt(ctx, decrypted.data(), &outlen, encryptedText.data(), encryptedText.size()) <= 0)
+        handleOpenSSLError();
+
+    EVP_PKEY_CTX_free(ctx); 
+
+    return std::string(decrypted.begin(), decrypted.end());
+}
+
+
 extern inline void freeKey(EVP_PKEY *key){
     EVP_PKEY_free(key);
 }
