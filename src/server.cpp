@@ -1,26 +1,38 @@
 #include "socket_utils.h"
 #include "message_utils.h"
 #include "cryption_utils.h"
+#include <mutex>
+#include <netinet/in.h>
+#include <thread>
+
+int port_no = 8080; // base port
+
+// Vector to store connected clients
+std::vector<client> clients;
+
+// mutex for clients vector thread-safety
+std::mutex clients_mutex;
+int client_count = 0;
+
+void handleClient(client& client_data);
 
 int main(int argc, char **argv){
-	int port_no = 8080;
 	if (argc>1){
 		// this is probably not safe practice but whatever
 		port_no = atoi(argv[1]); // ./bin/server <port>
 	}
     int server_sockfd = createServerSocket(port_no);
-	
+	if (server_sockfd < 0) {
+        std::cerr << "Failed to create server socket\n";
+        return -1;
+    }
+
 	sockaddr_in client_addr;
 	socklen_t length = sizeof(client_addr);
-	
-	bool keyACK = false;
-
-	char recv_buf[65536] = { 0 }; // buffer  2^16 because why not  
-	int client_count = 0;
-	std::vector<client> clients(max_client_count);
 
 	while(true) {
 		try{
+			// https://beej.us/guide/bgnet/html/split/ip-addresses-structs-and-data-munging.html#:~:text=network%20to%20printable
 			int conn = accept(server_sockfd, (sockaddr*)&client_addr,&length);
 			if(conn<0) {
 				std::cerr << "couldn't connect\n";
@@ -28,34 +40,21 @@ int main(int argc, char **argv){
 				return -1;	
 			}
 
-			std::cout << "new client accepted.\n" << std::endl;
-			client_count += 1;
-			// https://beej.us/guide/bgnet/html/split/ip-addresses-structs-and-data-munging.html#:~:text=network%20to%20printable
+			std::cout << "\nnew client accepted.\n";
+			
 			char client_ip[INET_ADDRSTRLEN] = "";
 			inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
-
-			while(recv(conn, recv_buf, sizeof(recv_buf), 0) > 0 ){
-				if(!keyACK){
-					std::cout << "Recieving key\n";
-					clients[client_count - 1].key = recv_buf;
-					std::cout << "Key recieved\n";
-					keyACK = true;
-					if(send(conn,recv_buf,sizeof(recv_buf),0) < 0){
-						std::cout << "failed to send key to client!\n";
-						keyACK = false;
-					}
-					else{
-						std::cout << "Key sent to client\n";
-					}
-					memset(recv_buf, '\0', sizeof(recv_buf));
-				}
-				else{
-					std::cout << "recieved message:\n"<< recv_buf << "\n\nfrom client " << client_ip << ":" << ntohs(client_addr.sin_port) << std::endl;
-					memset(recv_buf, '\0', sizeof(recv_buf));
-
-				}
-
+			client_count += 1;
+			
+			client new_client(conn, client_addr, client_ip);
+			{
+				std::lock_guard<std::mutex> lock(clients_mutex);
+				clients.push_back(new_client);
 			}
+
+			std::cout << "Client IP: " << new_client.client_ip << ":" <<  ntohs(new_client.client_addr.sin_port) << "\n";
+
+			std::thread(handleClient, std::ref(clients.back())).detach();
 		}
 		catch(const std::exception& e){
 			std::cerr << "An error occured " << e.what() << "\n";
@@ -67,4 +66,38 @@ int main(int argc, char **argv){
 }
 
 
+void handleClient(client& client_data){
+    char recv_buf[65536] = {0};
+    bool keyACK = false;
+    while (recv(client_data.conn, recv_buf, sizeof(recv_buf), 0) > 0) {
+        if(!keyACK){
+            // replace client_data.conns with client_data.name after you implement names
+            std::cout << "Recieving key from client: " << client_data.conn << "\n";
+            client_data.key = recv_buf;
+            std::cout << "Key recieved from client " << client_data.conn << "\n";
+            keyACK = true;
 
+            if(send(client_data.conn,recv_buf,sizeof(recv_buf),0) < 0){
+                std::cerr << "Failed to send key to client " << client_data.conn << "\n";
+                keyACK = false;
+            }
+            else{
+                std::cout << "Key sent to client " << client_data.conn  << "\n";
+            }
+        }
+        else{
+            std::cout << "\nRecieved message from client: " << client_data.conn << " ip: " << inet_ntoa(client_data.client_addr.sin_addr) << ":" << ntohs(client_data.client_addr.sin_port) << "\nMessage content:\n"<< recv_buf << std::endl;
+        }
+        memset(recv_buf, '\0', sizeof(recv_buf));
+    }
+
+    std::cout << "\nClient disconnected: " << inet_ntoa(client_data.client_addr.sin_addr) << ":" << ntohs(client_data.client_addr.sin_port) << "\n";
+    close(client_data.conn);
+    std::lock_guard<std::mutex> lock(clients_mutex);
+    // remove the client from clients list
+    client_count--;
+    clients.erase(std::remove_if(clients.begin(), clients.end(),[&client_data](const client &c) { return c.conn == client_data.conn; }),clients.end());
+    if(client_count == 0){
+        std::cout << "No clients remaining\n"; 
+    }
+}

@@ -4,13 +4,19 @@
 #include "socket_utils.h"
 #include "cryption_utils.h"
 #include <fstream>
+#include <algorithm>
 
 class client{
     public:
-        std::string name;
-        int conn;
-        std::string key;
-    private:
+        std::string name;        // Client name (optional, can be set later)
+        int conn;                // Client socket file descriptor
+        std::string key;         // client public key
+        sockaddr_in client_addr; // client adress information
+        std::string client_ip;   // client ip
+	    
+        // client constructor
+        client(int conn = -1, const sockaddr_in& addr = {}, const std::string& ip = "") : name(""), conn(conn), key(""), client_addr(addr), client_ip(ip) {}
+
 };
 
 extern inline void logMessage(std::string logMessage,std::string& logLocation){

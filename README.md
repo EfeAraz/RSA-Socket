@@ -1,5 +1,11 @@
 ## TODO 
-- [ ] set/get usernames for clients  
+- [ ] send all keys to new client 
+- [ ] send old clients the new client's key  
+- [ ] save other keys on clientside  
+- [ ] send messages to clients  
+- [ ] decrypt on clientside  
+- [ ] set/get usernames for clients
+- [ ] create hashmaps for storing client name/fd pairs  
 - [ ] save files to server and send it later to clients  
 - [ ] implement other settings like file transfer  
 - [ ] logs  
@@ -13,11 +19,11 @@ C++ Project that uses OpenSSL's cryptographic functions to encyrpt/decrypt messa
 
 You can use your existing [OpenSSL compatible](https://wiki.openssl.org/index.php/EVP#:~:text=The%20following%20EVP_PKEY%20types%20are%20supported%3A) public/private key pair or generate a new one with keygen.sh  
 
-## Dependencies 
+## Dependencies  
 - Unix shell  
 - OPENSSL
 
-# Setting up for the first time
+# Setting up for the first time  
 #### install openssl from your package manager  
 ```bash 
 git clone https://github.com/EfeAraz/RSA-Socket;  
@@ -39,7 +45,8 @@ g++ ./src/client.cpp -o ./bin/client -lssl -lcrypto;./bin/client 127.0.0.1 8080;
 
 ---
 ### References:
-- man command for manuals  
+- [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)  
+- man/tldr pages  
 - [geeksforgeeks](https://www.geeksforgeeks.org/socket-programming-cc/)  
 - [stackoverflow rsa encryption using keys](https://stackoverflow.com/questions/73631293/how-to-encrypt-a-string-using-openssl-c-library-and-a-public-key-file)    
 - [Openssl docs](https://docs.openssl.org/master/man3/)  
