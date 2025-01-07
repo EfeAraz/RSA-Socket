@@ -3,10 +3,12 @@
 
 #include "socket_utils.h"
 #include "cryption_utils.h"
+#include <cstddef>
 #include <fstream>
 #include <algorithm>
 #include <mutex>
 #include <openssl/evp.h>
+#include <string>
 #include <thread>
 #include <ctime>
 
@@ -19,11 +21,24 @@ class client{
         std::string key;         // client public key
         sockaddr_in client_addr; // client adress information
         std::string client_ip;   // client ip
-	    
+	    client* peer = nullptr;
         // client constructor
         client(int conn = -1, const sockaddr_in& addr = {}, const std::string& ip = "") : name(""), conn(conn), key(""), client_addr(addr), client_ip(ip) {}
 
 };
+
+
+extern inline void setPeer(client* client1,client* client2){
+    if(client1->peer)
+        client1->peer->peer = nullptr;
+    if(client1->peer)
+        client2->peer->peer = nullptr;
+
+    client1->peer = client2;
+    client2->peer = client1;
+    std::cout << "Peer relationship established: " << client1->conn << " <-> " << client2->conn << "\n";
+}
+
 
 extern inline void logMessage(std::string logMessage,std::string& logLocation){
     std::ofstream f(logLocation, std::ofstream::app); // append
@@ -47,10 +62,9 @@ extern inline int sendMessage(int clientSocket,std::string message){
     return -1;
 }
 
-extern inline void readMessages(int client_fd, EVP_PKEY* pv_key, EVP_PKEY* pb_key){
+extern inline void readMessages(int client_fd, EVP_PKEY* pv_key, EVP_PKEY* pb_key,std::string& tempKeyFile){
     sleep(1);
     char readBuffer[buffer_size] = {0};
-    std::string tempKeyFile = "/tmp/tempkey.pem";
     // receive messages from server
     while(recv(client_fd,readBuffer,buffer_size,0) > 0){
         std::string msg_recv = readBuffer; 
@@ -87,7 +101,7 @@ extern inline void readMessages(int client_fd, EVP_PKEY* pv_key, EVP_PKEY* pb_ke
             }
         }
     }
-    readMessages(client_fd,pv_key,pb_key);
+    readMessages(client_fd,pv_key,pb_key,tempKeyFile);
 }
 
 /* // THIS SENDFILE FUNCTION DOES NOT WORK DO NOT USE IT!

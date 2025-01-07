@@ -102,12 +102,21 @@ void handleClient(client& client_data){
                     } else {
                         std::cerr << "Failed to send key of client " << client1.conn << " to client " << client2.conn << "\n";
                     }
+                    setPeer(&client1,&client2);
             }
         }
         else{
             std::cout << "\nRecieved message from client: " << client_data.conn << " ip: " << inet_ntoa(client_data.client_addr.sin_addr) << ":" << ntohs(client_data.client_addr.sin_port) << "\nMessage content:\n"<< recv_buf << std::endl;
-            if(send(client_data.conn,recv_buf,sizeof(recv_buf),0) > 0){
-                std::cout << "Message sent to client\n"; 
+            if(client_data.peer != nullptr){
+                if(send(client_data.peer->conn,recv_buf,sizeof(recv_buf),0) > 0){
+                    std::cout << "Message sent to client: " << client_data.peer->conn << std::endl;
+                }
+            }
+            else if(send(client_data.conn,recv_buf,sizeof(recv_buf),0) > 0){
+                std::cout << "Message sent to client: " << client_data.conn << std::endl;; 
+            }
+            else{
+                std::cerr << "Message couldn't be sent to " << client_data.peer->conn << " nor " << client_data.conn << std::endl;
             }
         }
         memset(recv_buf, '\0', sizeof(recv_buf));

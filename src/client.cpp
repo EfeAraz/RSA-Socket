@@ -3,19 +3,23 @@
 #include "message_utils.h"
 
 const std::string privateKeyFileLocation = "./keys/private.pem";
-const std::string publicKeyFileLocation = "./keys/public.pem"; 
-std::string otherPublicKeyFileLocation = "/tmp/tempkey.pem"; // replace "tempkey" with keyholder's name 
+const std::string publicKeyFileLocation = "./keys/public.pem";  
 std::string logger = "/tmp/RSA-socket.log";
 
 int main(int argc,char** argv){
     // get ip & port from command line argumentss
     // probably not safe
-    if(argc!=3){
-        std::cerr << "Correct Usage: " << argv[0] << " ip_adress port_no\n";
+    if(argc!=4){
+        std::cerr << "Correct Usage: " << argv[0] << " ip_adress port_no username\n";
         return 1;
-    }   
+    }
+    // probably not safe at all but whatever
     std::string serverIP = argv[1];
     int port = atoi(argv[2]);
+    std::string username = argv[3];
+    std::string otherPublicKeyFileLocation = "/tmp/"+ username +"peer.pem"; 
+
+
     logMessage("started logging at location: " + logger ,logger);
     // create socket file descriptor
     int clientSocket = connectToServer(serverIP,port);
@@ -34,7 +38,6 @@ int main(int argc,char** argv){
         EVP_PKEY_free(privateKey); 
         return 1;
     }
-
     // send public key to server, then free memory
     sendPublicKeyToServer(publicKey,clientSocket);
     EVP_PKEY_free(publicKey);
@@ -48,7 +51,7 @@ int main(int argc,char** argv){
         return 1;
     }
     std::cout << "read other key from file\n";
-    std::thread(readMessages,clientSocket,privateKey,pbKey).detach();
+    std::thread(readMessages,clientSocket,privateKey,pbKey,std::ref(otherPublicKeyFileLocation)).detach();
 
     // send encrypted messages to server
     while (true) {     
