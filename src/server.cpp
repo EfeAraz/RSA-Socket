@@ -82,6 +82,27 @@ void handleClient(client& client_data){
             else{
                 std::cout << "Key sent to client " << client_data.conn  << "\n";
             }
+            // exchange keys if there are 2 clients
+            if (clients.size() == 2) {
+                    std::lock_guard<std::mutex> lock(clients_mutex);
+
+                    client& client1 = clients[0];
+                    client& client2 = clients[1];
+
+                    // send client2's key to client1 
+                    if (send(client1.conn, client2.key.c_str(), client2.key.size(), 0) > 0) {
+                        std::cout << "Sent public key of client " << client2.conn << " to client " << client1.conn << "\n";
+                    } else {
+                        std::cerr << "Failed to send key of client " << client2.conn << " to client " << client1.conn << "\n";
+                    }
+
+                    // send client1's key to client2
+                    if (send(client2.conn, client1.key.c_str(), client1.key.size(), 0) > 0) {
+                        std::cout << "Sent key of client " << client1.conn << " to client " << client2.conn << "\n";
+                    } else {
+                        std::cerr << "Failed to send key of client " << client1.conn << " to client " << client2.conn << "\n";
+                    }
+            }
         }
         else{
             std::cout << "\nRecieved message from client: " << client_data.conn << " ip: " << inet_ntoa(client_data.client_addr.sin_addr) << ":" << ntohs(client_data.client_addr.sin_port) << "\nMessage content:\n"<< recv_buf << std::endl;

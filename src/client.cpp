@@ -48,7 +48,7 @@ int main(int argc,char** argv){
         return 1;
     }
     std::cout << "read other key from file\n";
-    std::thread(readMessages,clientSocket,privateKey).detach();
+    std::thread(readMessages,clientSocket,privateKey,pbKey).detach();
 
     // send encrypted messages to server
     while (true) {     

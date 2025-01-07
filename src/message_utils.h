@@ -6,6 +6,7 @@
 #include <fstream>
 #include <algorithm>
 #include <mutex>
+#include <openssl/evp.h>
 #include <thread>
 #include <ctime>
 
@@ -46,28 +47,47 @@ extern inline int sendMessage(int clientSocket,std::string message){
     return -1;
 }
 
-extern inline void readMessages(int client_fd, EVP_PKEY* pv_key){
+extern inline void readMessages(int client_fd, EVP_PKEY* pv_key, EVP_PKEY* pb_key){
     sleep(1);
     char readBuffer[buffer_size] = {0};
+    std::string tempKeyFile = "/tmp/tempkey.pem";
     // receive messages from server
     while(recv(client_fd,readBuffer,buffer_size,0) > 0){
         std::string msg_recv = readBuffer; 
         if(!msg_recv.empty()){
             if (msg_recv.rfind("----",0) == 0){
                 std::cout << "\nRECIEVED A KEY!!!\n";
-                std::cout << msg_recv << std::endl; // add the key into keylist
+                std::cout << msg_recv << std::endl; 
+                std::fstream p_bFile;
+                p_bFile.open(tempKeyFile,std::fstream::out);
+                if(!p_bFile){
+                    std::cerr << "Unable to open other public key file\n";
+                
+                }
+                else{
+                    p_bFile << msg_recv << std::endl;
+                    std::cout << "Saved key into " << tempKeyFile << "\n";
+                    p_bFile.close();
+                }
+                pb_key = loadPublicKey(tempKeyFile);
             }
             else{
-                // std::cout << "\nRecieved message! "; // << "Message contents: " << msg_recv << std::endl;
+                if (msg_recv.rfind("==", msg_recv.size() - 2) == (msg_recv.size() - 2)){                
+                    // std::cout << "\nRecieved message! "; // << "Message contents: " << msg_recv << std::endl;
 
-                // encrypted base64 -> encrypted string -> decrypted string
-                std::vector<unsigned char> encrypted_binary_data = base64Decode(msg_recv);
-                std::string decrypted_text = decryptWithPrivateKey(pv_key,encrypted_binary_data);
-                std::cout << "server: " << decrypted_text << std::endl;
+                    // encrypted base64 -> encrypted string -> decrypted string
+                    std::vector<unsigned char> encrypted_binary_data = base64Decode(msg_recv);
+                    std::string decrypted_text = decryptWithPrivateKey(pv_key,encrypted_binary_data);
+                    std::cout << "other client: " << decrypted_text << std::endl;
+                }
+                else{
+                    std::cerr << "server msg: ";
+                    std::cout << msg_recv << std::endl;
+                }
             }
         }
     }
-    readMessages(client_fd,pv_key);
+    readMessages(client_fd,pv_key,pb_key);
 }
 
 /* // THIS SENDFILE FUNCTION DOES NOT WORK DO NOT USE IT!
