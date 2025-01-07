@@ -58,8 +58,6 @@ extern inline void readMessages(int server_fd, EVP_PKEY* pv_key){
         std::vector<unsigned char> encrypted_binary_data = base64Decode(base64_enc);
         std::string decrypted_text = decryptWithPrivateKey(pv_key,encrypted_binary_data);
         std::cout << "decrypted message: " << decrypted_text << std::endl;
-    
-        memset(readBuffer,0,sizeof(readBuffer));
     }
     readMessages(server_fd,pv_key);
 }
