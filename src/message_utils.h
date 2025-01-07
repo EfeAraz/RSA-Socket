@@ -9,7 +9,7 @@
 #include <thread>
 #include <ctime>
 
-size_t buffer_size = 65536;
+constexpr size_t buffer_size = 65536;
 
 class client{
     public:
@@ -51,17 +51,20 @@ extern inline void readMessages(int client_fd, EVP_PKEY* pv_key){
     char readBuffer[buffer_size] = {0};
     // receive messages from server
     while(recv(client_fd,readBuffer,buffer_size,0) > 0){
-        if(readBuffer == ""){
-            std::cout << "recieved empty message?\n";
-        }
-        else{
-            std::string base64_enc = readBuffer; 
-            std::cout << "\nRecieved message!\n"; // << "Message contents: " << base64_enc << std::endl;
-        
-            // encrypted base64 -> encrypted string -> decrypted string
-            std::vector<unsigned char> encrypted_binary_data = base64Decode(base64_enc);
-            std::string decrypted_text = decryptWithPrivateKey(pv_key,encrypted_binary_data);
-            std::cout << "decrypted message: " << decrypted_text << std::endl;
+        std::string msg_recv = readBuffer; 
+        if(!msg_recv.empty()){
+            if (msg_recv.rfind("----",0) == 0){
+                std::cout << "\nRECIEVED A KEY!!!\n";
+                std::cout << msg_recv << std::endl; // add the key into keylist
+            }
+            else{
+                // std::cout << "\nRecieved message! "; // << "Message contents: " << msg_recv << std::endl;
+
+                // encrypted base64 -> encrypted string -> decrypted string
+                std::vector<unsigned char> encrypted_binary_data = base64Decode(msg_recv);
+                std::string decrypted_text = decryptWithPrivateKey(pv_key,encrypted_binary_data);
+                std::cout << "server: " << decrypted_text << std::endl;
+            }
         }
     }
     readMessages(client_fd,pv_key);
