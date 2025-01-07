@@ -1,15 +1,8 @@
 ## TODO 
-- [ ] send all keys to new client 
-- [ ] send old clients the new client's key  
-- [ ] save other keys on clientside  
-- [ ] set/get usernames for clients
-- [ ] create hashmaps for storing client name/fd pairs  
-- [ ] save files to server and send it later to clients  
-- [ ] implement other settings like file transfer  
+- [ ] send new clients key to old client  
 - [ ] logs  
-- [ ] save functions to header files  
+- [ ] improve functions  
 - [ ] add salt to messages/keys  
-- [ ] protection against DoS and other security related attacks  
 
 ---
 # Description
