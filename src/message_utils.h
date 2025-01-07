@@ -46,22 +46,63 @@ extern inline int sendMessage(int clientSocket,std::string message){
     return -1;
 }
 
-extern inline void readMessages(int server_fd, EVP_PKEY* pv_key){
+extern inline void readMessages(int client_fd, EVP_PKEY* pv_key){
     sleep(1);
     char readBuffer[buffer_size] = {0};
     // receive messages from server
-    while(recv(server_fd,readBuffer,buffer_size,0) > 0){
-        std::string base64_enc = readBuffer; 
-        std::cout << "\nRecieved message!\n"; // << "Message contents: " << base64_enc << std::endl;
-    
-        // encrypted base64 -> encrypted string -> decrypted string
-        std::vector<unsigned char> encrypted_binary_data = base64Decode(base64_enc);
-        std::string decrypted_text = decryptWithPrivateKey(pv_key,encrypted_binary_data);
-        std::cout << "decrypted message: " << decrypted_text << std::endl;
+    while(recv(client_fd,readBuffer,buffer_size,0) > 0){
+        if(readBuffer == ""){
+            std::cout << "recieved empty message?\n";
+        }
+        else{
+            std::string base64_enc = readBuffer; 
+            std::cout << "\nRecieved message!\n"; // << "Message contents: " << base64_enc << std::endl;
+        
+            // encrypted base64 -> encrypted string -> decrypted string
+            std::vector<unsigned char> encrypted_binary_data = base64Decode(base64_enc);
+            std::string decrypted_text = decryptWithPrivateKey(pv_key,encrypted_binary_data);
+            std::cout << "decrypted message: " << decrypted_text << std::endl;
+        }
     }
-    readMessages(server_fd,pv_key);
+    readMessages(client_fd,pv_key);
 }
 
+/* // THIS SENDFILE FUNCTION DOES NOT WORK DO NOT USE IT!
+extern inline int sendFile(int client_sock, std::string filePath,EVP_PKEY* pb_key){
+    std::ifstream file(filePath,std::ifstream::binary);
+    if(!file){
+        std::cerr << "Couldnt open file: " << filePath << std::endl;
+        return -1;
+    }
+    const size_t chunk_size = 230;
+    char chunk_buffer[chunk_size];
+    unsigned char encrypted_Buffer[EVP_PKEY_size(pb_key)];
+    
+    // read and send file in chunks
+    std::cout << "sending file\n";
+    sendMessage(client_sock,"SENDING FILE\n");
+
+    while(!file.eof()){
+        file.read(chunk_buffer,chunk_size);
+        size_t bytesRead = file.gcount();
+
+        if(bytesRead > 0){
+            std::vector<unsigned char> encryptedMessage = encryptWithPublicKey(pb_key, chunk_buffer);  
+            std::string base64MessageEncrypted = base64Encode(encryptedMessage);
+            if (base64MessageEncrypted.empty()) {
+                std::cerr << "Error: Something happened while encrypting base64 data so it's empty!\n";
+                file.close();
+                return -1;
+            }
+            std::cout << "\nEncrypted message in base64 format:\n" << base64MessageEncrypted << "\n";
+            sendMessage(client_sock,base64MessageEncrypted);
+        }
+    }
+    file.close();
+    std::cout << "File sent!";
+    return 1;
+}
+*/
 
 extern inline void sendPublicKeyToServer(EVP_PKEY* publicKey,int clientSocket){
     std::string pemKey = publicKeyToPEMString(publicKey);
