@@ -2,8 +2,6 @@
 - [ ] send all keys to new client 
 - [ ] send old clients the new client's key  
 - [ ] save other keys on clientside  
-- [ ] send messages to clients  
-- [ ] decrypt on clientside  
 - [ ] set/get usernames for clients
 - [ ] create hashmaps for storing client name/fd pairs  
 - [ ] save files to server and send it later to clients  

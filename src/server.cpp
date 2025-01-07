@@ -1,9 +1,7 @@
 #include "socket_utils.h"
 #include "message_utils.h"
 #include "cryption_utils.h"
-#include <mutex>
-#include <netinet/in.h>
-#include <thread>
+
 
 int port_no = 8080; // base port
 
@@ -87,6 +85,9 @@ void handleClient(client& client_data){
         }
         else{
             std::cout << "\nRecieved message from client: " << client_data.conn << " ip: " << inet_ntoa(client_data.client_addr.sin_addr) << ":" << ntohs(client_data.client_addr.sin_port) << "\nMessage content:\n"<< recv_buf << std::endl;
+            if(send(client_data.conn,recv_buf,sizeof(recv_buf),0) > 0){
+                std::cout << "Message sent to client\n"; 
+            }
         }
         memset(recv_buf, '\0', sizeof(recv_buf));
     }

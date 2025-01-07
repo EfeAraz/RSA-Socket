@@ -94,14 +94,22 @@ extern inline std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKe
 extern inline std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsigned char>& encryptedText) {
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(privateKey, nullptr);  // key context 
     // if can't read the key throw error
-    if (!ctx) 
+    if (!ctx){
+        std::cerr << "could'nt read key while decrpyting" ;
         handleOpenSSLError();
+    }
     // if can't initialize decryption throw error
-    if (EVP_PKEY_decrypt_init(ctx) <= 0)
+    if (EVP_PKEY_decrypt_init(ctx) <= 0){
+        std::cerr << "couldn't initialize decryption\n";
         handleOpenSSLError();
-
-    size_t outlen = 0;
+    }
+    if (encryptedText.size() > EVP_PKEY_size(privateKey)){
+        std::cerr << "decrypted text size exceeds private key modulus size\n";
+        std::cout << "text size: " << encryptedText.size() << " key size: " << EVP_PKEY_size(privateKey) << std::endl;
+        handleOpenSSLError();
+    }
     // determine buffer size for the decrypted output
+    size_t outlen = 0;
     if (EVP_PKEY_decrypt(ctx, nullptr, &outlen, encryptedText.data(), encryptedText.size()) <= 0)
         handleOpenSSLError();
 

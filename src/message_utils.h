@@ -5,6 +5,11 @@
 #include "cryption_utils.h"
 #include <fstream>
 #include <algorithm>
+#include <mutex>
+#include <thread>
+#include <ctime>
+
+size_t buffer_size = 65536;
 
 class client{
     public:
@@ -41,6 +46,25 @@ extern inline int sendMessage(int clientSocket,std::string message){
     return -1;
 }
 
+extern inline void readMessages(int server_fd, EVP_PKEY* pv_key){
+    sleep(1);
+    char readBuffer[buffer_size] = {0};
+    // receive messages from server
+    while(recv(server_fd,readBuffer,buffer_size,0) > 0){
+        std::string base64_enc = readBuffer; 
+        std::cout << "\nRecieved message!\n"; // << "Message contents: " << base64_enc << std::endl;
+    
+        // encrypted base64 -> encrypted string -> decrypted string
+        std::vector<unsigned char> encrypted_binary_data = base64Decode(base64_enc);
+        std::string decrypted_text = decryptWithPrivateKey(pv_key,encrypted_binary_data);
+        std::cout << "decrypted message: " << decrypted_text << std::endl;
+    
+        memset(readBuffer,0,sizeof(readBuffer));
+    }
+    readMessages(server_fd,pv_key);
+}
+
+
 extern inline void sendPublicKeyToServer(EVP_PKEY* publicKey,int clientSocket){
     std::string pemKey = publicKeyToPEMString(publicKey);
     if(sendMessage(clientSocket,pemKey) < 0){
@@ -70,7 +94,6 @@ extern inline std::vector<std::string> readFileContent(std::string &fileAddress)
 }
 
 extern inline int recvPublicKeyFromServer(std::string &otherPublicKeyFileLocation,int clientSocket){
-    size_t buffer_size = 65536;
     char *recv_buf = new char[buffer_size]; // buffer  2^16 because why not  
     std::cout << "Reading other public key from server\n";
     if(recv(clientSocket,recv_buf,buffer_size,0) > 0){

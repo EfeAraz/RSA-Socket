@@ -1,11 +1,10 @@
-#include <ctime>
 #include "socket_utils.h"
 #include "cryption_utils.h"
 #include "message_utils.h"
 
 const std::string privateKeyFileLocation = "./keys/private.pem";
 const std::string publicKeyFileLocation = "./keys/public.pem"; 
-std::string otherPublicKeyFileLocation = "./keys/asdasdas.pem"; // get this key's name from server 
+std::string otherPublicKeyFileLocation = "/tmp/tempkey.pem"; // replace "tempkey" with keyholder's name 
 std::string logger = "/tmp/RSA-socket.log";
 
 int main(int argc,char** argv){
@@ -49,7 +48,8 @@ int main(int argc,char** argv){
         return 1;
     }
     std::cout << "read other key from file\n";
-    
+    std::thread(readMessages,clientSocket,privateKey).detach();
+
     // send encrypted messages to server
     while (true) {     
         try{
