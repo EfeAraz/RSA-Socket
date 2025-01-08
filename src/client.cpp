@@ -21,7 +21,8 @@ int main(int argc,char** argv){
 
 
     logMessage("started logging at location: " + logger ,logger);
-    // create socket file descriptor
+    
+    // create file descriptor for connection
     int clientSocket = connectToServer(serverIP,port);
     if(clientSocket == -1){
         std::cerr << "Error while setting up client socket\n";
@@ -40,18 +41,10 @@ int main(int argc,char** argv){
     }
     // send public key to server, then free memory
     sendPublicKeyToServer(publicKey,clientSocket);
-    EVP_PKEY_free(publicKey);
     //recieve public key from server
-    recvPublicKeyFromServer(otherPublicKeyFileLocation,clientSocket);
     //read the public key which we'll use to  
-    EVP_PKEY* pbKey = loadPublicKey(otherPublicKeyFileLocation);
-    if (!pbKey) {
-        std::cerr << "Error: Failed while reading other key\n";
-        close(clientSocket);
-        return 1;
-    }
-    std::cout << "read other key from file\n";
-    std::thread(readMessages,clientSocket,privateKey,pbKey,std::ref(otherPublicKeyFileLocation)).detach();
+
+    std::thread(readMessages,clientSocket,privateKey,publicKey,std::ref(otherPublicKeyFileLocation)).detach();
 
     // send encrypted messages to server
     while (true) {     
@@ -63,7 +56,7 @@ int main(int argc,char** argv){
             if (message == "exit") {
                 break;
             }
-            std::vector<unsigned char> encryptedMessage = encryptWithPublicKey(pbKey, message);  
+            std::vector<unsigned char> encryptedMessage = encryptWithPublicKey(publicKey, message);  
             std::string base64MessageEncrypted = base64Encode(encryptedMessage);
             std::cout << "\nEncrypted message in base64 format:\n" << base64MessageEncrypted << "\n";
             sendMessage(clientSocket,base64MessageEncrypted);
@@ -76,7 +69,7 @@ int main(int argc,char** argv){
 
     // after exit free/close everything
     close(clientSocket);
-    EVP_PKEY_free(pbKey);
+    EVP_PKEY_free(publicKey);
     EVP_PKEY_free(privateKey);
     std::cout << "Cleanup complete!\n";
     return 0;

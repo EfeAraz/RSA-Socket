@@ -22,6 +22,7 @@ class client{
         sockaddr_in client_addr; // client adress information
         std::string client_ip;   // client ip
 	    client* peer = nullptr;
+        bool keyACK = false;
         // client constructor
         client(int conn = -1, const sockaddr_in& addr = {}, const std::string& ip = "") : name(""), conn(conn), key(""), client_addr(addr), client_ip(ip) {}
 
@@ -31,7 +32,7 @@ class client{
 extern inline void setPeer(client* client1,client* client2){
     if(client1->peer)
         client1->peer->peer = nullptr;
-    if(client1->peer)
+    if(client2->peer)
         client2->peer->peer = nullptr;
 
     client1->peer = client2;
@@ -54,7 +55,7 @@ extern inline void logMessage(std::string logMessage,std::string& logLocation){
 
 extern inline int sendMessage(int clientSocket,std::string message){
     const char* msg = message.c_str();
-    if(send(clientSocket,msg,strlen(msg),0) >= 0){
+    if(send(clientSocket,msg,message.length(),0) >= 0){
         std::cout <<  "Message Sent!\n";
         return 1;
     }
@@ -76,13 +77,13 @@ extern inline void readMessages(int client_fd, EVP_PKEY* pv_key, EVP_PKEY* pb_ke
                 p_bFile.open(tempKeyFile,std::fstream::out);
                 if(!p_bFile){
                     std::cerr << "Unable to open other public key file\n";
-                
                 }
                 else{
-                    p_bFile << msg_recv << std::endl;
+                    p_bFile << msg_recv;
                     std::cout << "Saved key into " << tempKeyFile << "\n";
                     p_bFile.close();
                 }
+                pb_key = nullptr;
                 pb_key = loadPublicKey(tempKeyFile);
             }
             else{
