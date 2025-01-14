@@ -1,9 +1,7 @@
 ## TODO 
-- [ ] send new clients key to old client  
 - [ ] logs  
 - [ ] improve functions  
-- [ ] add salt to messages/keys  
-
+- [ ] maybe add salt to messages/keys  
 ---
 # Description
 C++ Project that uses OpenSSL's cryptographic functions to encyrpt/decrypt messages and send/recieve messages using [sockets](https://www.geeksforgeeks.org/socket-in-computer-network/).  
@@ -28,9 +26,9 @@ g++ ./src/server.cpp -o ./bin/server;./bin/server 8080;
 ```
 
 ## Client :
-for localhost:
+example for localhost:
 ```bash
-g++ ./src/client.cpp -o ./bin/client -lssl -lcrypto;./bin/client 127.0.0.1 8080; 
+g++ ./src/client.cpp -o ./bin/client -lssl -lcrypto;./bin/client 127.0.0.1 8080 username; 
 ```  
 
 

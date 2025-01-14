@@ -13,6 +13,7 @@
 #include <ctime>
 
 constexpr size_t buffer_size = 65536;
+std::mutex clientsMutex;
 
 class client{
     public:
@@ -22,22 +23,20 @@ class client{
         sockaddr_in client_addr; // client adress information
         std::string client_ip;   // client ip
 	    client* peer = nullptr;
+        int peer_conn;
         bool keyACK = false;
+        bool peerKeyACK = false;
         // client constructor
         client(int conn = -1, const sockaddr_in& addr = {}, const std::string& ip = "") : name(""), conn(conn), key(""), client_addr(addr), client_ip(ip) {}
-
 };
 
 
 extern inline void setPeer(client* client1,client* client2){
-    if(client1->peer)
-        client1->peer->peer = nullptr;
-    if(client2->peer)
-        client2->peer->peer = nullptr;
-
+    std::lock_guard<std::mutex> lock(clientsMutex);
     client1->peer = client2;
     client2->peer = client1;
     std::cout << "Peer relationship established: " << client1->conn << " <-> " << client2->conn << "\n";
+    std::cout << client1->conn << " peer: " << client1->peer->conn << " ," << client2->conn << " peer: " << client2->peer->conn << std::endl;
 }
 
 
