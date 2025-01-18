@@ -157,6 +157,7 @@ void handleClient(client& client_data){
             else{
                 std::cout << "\nRecieved message from client: " << client_data.conn << " ip: " << inet_ntoa(client_data.client_addr.sin_addr) << ":" << ntohs(client_data.client_addr.sin_port) << "\nMessage content:\n"<< recv_buf << std::endl;
                 std::string recv_data = recv_buf;
+                std::string peer_fail_message = "Failed to send message to peer";
                 if(client_data.peer != nullptr){
                     if(send(client_data.peer->conn,recv_buf,sizeof(recv_buf),0) > 0){
                         std::cout << "Message sent to client(peer): " << client_data.peer->conn << std::endl;
@@ -165,8 +166,8 @@ void handleClient(client& client_data){
                         std::cerr << "Failed to send message to client(peer): " << client_data.peer << std::endl;
                     }
                 }
-                else if(send(client_data.conn,recv_buf,sizeof(recv_buf),0) > 0){
-                    std::cout << "Peer doesn't exist for this client! Message sent back to client: " << client_data.conn << std::endl;; 
+                else if(send(client_data.conn,peer_fail_message.c_str(),sizeof(recv_buf),0) > 0){
+                    std::cout << "Peer doesn't exist for this client! Error Message sent to client: " << client_data.conn << std::endl;; 
                 }
                 else{
                     std::cerr << "Message couldn't be sent to peer or the client: "<< client_data.conn << std::endl;

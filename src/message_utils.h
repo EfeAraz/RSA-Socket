@@ -55,53 +55,59 @@ extern inline void logMessage(std::string logMessage,std::string& logLocation){
 extern inline int sendMessage(int clientSocket,std::string message){
     const char* msg = message.c_str();
     if(send(clientSocket,msg,message.length(),0) >= 0){
-        std::cout <<  "Message Sent!\n";
+        std::cout <<  "\tMessage Sent!\n";
         return 1;
     }
-    std::cerr << "Couldn't send message\n";
+    std::cerr << "\tCouldn't send message\n";
     return -1;
 }
 
-extern inline void readMessages(int client_fd, EVP_PKEY* pv_key, EVP_PKEY* pb_key,std::string& tempKeyFile){
-    sleep(1);
-    char readBuffer[buffer_size] = {0};
-    // receive messages from server
-    while(recv(client_fd,readBuffer,buffer_size,0) > 0){
-        std::string msg_recv = readBuffer; 
-        if(!msg_recv.empty()){
-            if (msg_recv.rfind("----",0) == 0){
-                std::cout << "\nRECIEVED A KEY!!!\n";
-                std::cout << msg_recv << std::endl; 
-                std::fstream p_bFile;
-                p_bFile.open(tempKeyFile,std::fstream::out);
-                if(!p_bFile){
-                    std::cerr << "Unable to open other public key file\n";
-                }
-                else{
-                    p_bFile << msg_recv;
-                    std::cout << "Saved key into " << tempKeyFile << "\n";
-                    p_bFile.close();
-                }
+extern inline void readMessages(int client_fd, EVP_PKEY* pv_key,EVP_PKEY*& pb_key,std::string& tempKeyFile){
+    while(true){
+        try{
+            char readBuffer[buffer_size] = {0};
+            // receive messages from server
+            if(recv(client_fd, readBuffer, buffer_size, 0) <= 0) {
+                std::cerr << "Connection closed\n";
                 pb_key = nullptr;
-                pb_key = loadPublicKey(tempKeyFile);
+                break;
             }
-            else{
-                if (msg_recv.rfind("==", msg_recv.size() - 2) == (msg_recv.size() - 2)){                
-                    // std::cout << "\nRecieved message! "; // << "Message contents: " << msg_recv << std::endl;
-
-                    // encrypted base64 -> encrypted string -> decrypted string
-                    std::vector<unsigned char> encrypted_binary_data = base64Decode(msg_recv);
-                    std::string decrypted_text = decryptWithPrivateKey(pv_key,encrypted_binary_data);
-                    std::cout << "other client: " << decrypted_text << std::endl;
+            
+            std::string msg_recv = readBuffer; 
+            if(!msg_recv.empty()){
+                if (msg_recv.rfind("----",0) == 0){
+                    std::cout << "\nRECIEVED A KEY!!!\n";
+                    std::cout << msg_recv << std::endl; 
+                    std::fstream p_bFile(tempKeyFile,std::fstream::out);
+                    if(!p_bFile){
+                        std::cerr << "Unable to open other public key file\n";
+                    }
+                    else{
+                        p_bFile << msg_recv;
+                        std::cout << "Saved key into " << tempKeyFile << "\n";
+                        p_bFile.close();
+                        pb_key = loadPublicKey(tempKeyFile);
+                    }
                 }
                 else{
-                    std::cerr << "server msg: ";
-                    std::cout << msg_recv << std::endl;
+                    if (msg_recv.rfind("==", msg_recv.size() - 2) == (msg_recv.size() - 2)){                
+                        // std::cout << "\nRecieved message! "; // << "Message contents: " << msg_recv << std::endl;
+                        // encrypted base64 -> encrypted string -> decrypted string
+                        std::vector<unsigned char> encrypted_binary_data = base64Decode(msg_recv);
+                        std::string decrypted_text = decryptWithPrivateKey(pv_key,encrypted_binary_data);
+                        std::cout << "\nother client: " << decrypted_text << std::endl;
+                    }
+                    else{
+                        std::cerr << "\nMESSAGE FROM SERVER: " << msg_recv << std::endl;
+                    }
+                    std::cout << "Enter your message (type 'exit' to quit): ";
                 }
             }
         }
+        catch(const std::exception& e){
+            std::cerr << "An error occured while reading" << e.what() << "\n";
+        }
     }
-    readMessages(client_fd,pv_key,pb_key,tempKeyFile);
 }
 
 /* // THIS SENDFILE FUNCTION DOES NOT WORK DO NOT USE IT!

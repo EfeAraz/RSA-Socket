@@ -17,7 +17,7 @@ int main(int argc,char** argv){
     std::string serverIP = argv[1];
     int port = atoi(argv[2]);
     std::string username = argv[3];
-    std::string otherPublicKeyFileLocation = "/tmp/"+ username +"peer.pem"; 
+    std::string otherPublicKeyFileLocation = "/tmp/"+ username +"peer.pem";
 
 
     logMessage("started logging at location: " + logger ,logger);
@@ -42,9 +42,9 @@ int main(int argc,char** argv){
     // send public key to server, then free memory
     sendPublicKeyToServer(publicKey,clientSocket);
     //recieve public key from server
-    //read the public key which we'll use to  
-
-    std::thread(readMessages,clientSocket,privateKey,publicKey,std::ref(otherPublicKeyFileLocation)).detach();
+    //read the public key which we'll use to 
+    EVP_PKEY* other_pb_key = nullptr;
+    std::thread(readMessages,clientSocket,privateKey,std::ref(other_pb_key),std::ref(otherPublicKeyFileLocation)).detach();
 
     // send encrypted messages to server
     while (true) {     
@@ -56,11 +56,20 @@ int main(int argc,char** argv){
             if (message == "exit") {
                 break;
             }
-            std::vector<unsigned char> encryptedMessage = encryptWithPublicKey(publicKey, message);  
-            std::string base64MessageEncrypted = base64Encode(encryptedMessage);
-            std::cout << "\nEncrypted message in base64 format:\n" << base64MessageEncrypted << "\n";
-            sendMessage(clientSocket,base64MessageEncrypted);
-            sleep(1);
+            if(other_pb_key != nullptr){
+                // std::cout << "Key exists!\n";
+                std::vector<unsigned char> encryptedMessage = encryptWithPublicKey(other_pb_key, message);
+                std::string base64MessageEncrypted = base64Encode(encryptedMessage);
+                // std::cout << "\nEncrypted message in base64 format:\n" << base64MessageEncrypted << "\n";
+                sendMessage(clientSocket,base64MessageEncrypted);
+            }
+            else{
+                std::cout << "Pair key DOES NOT exist! Sending message using local public key\n";
+                std::vector<unsigned char> encryptedMessage = encryptWithPublicKey(publicKey, message);
+                std::string base64MessageEncrypted = base64Encode(encryptedMessage);
+                // std::cout << "\nEncrypted message in base64 format:\n" << base64MessageEncrypted << "\n";
+                sendMessage(clientSocket,base64MessageEncrypted);    
+            }
         }
         catch(const std::exception& e){
             std::cerr << "An error occured " << e.what() << "\n";
