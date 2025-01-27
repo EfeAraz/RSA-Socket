@@ -50,7 +50,7 @@ int main(int argc,char** argv){
     while (true) {     
         try{
             std::string message = "";
-            std::cout << "Enter your message (type 'exit' to quit): ";
+            // std::cout << "Enter your message (type 'exit' to quit): ";
             std::getline(std::cin, message);
 
             if (message == "exit") {

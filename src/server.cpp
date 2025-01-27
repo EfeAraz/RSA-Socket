@@ -3,17 +3,16 @@
 #include <thread>
 #include <unistd.h>
 
+bool peersExists = false;
+int port_no = 8080;
 
-int port_no = 8080; // base port
-
-// Vector to store connected clients
-std::vector<client> clients;
+void handleClient(client& client_data);
 
 // mutex for clients vector thread-safety
 std::mutex clients_mutex;
+
+std::vector<client> clients;
 std::vector<std::thread> thread_clients;
-bool peersExists = false;
-void handleClient(client& client_data);
 
 int main(int argc, char **argv){
 	if (argc>1){
@@ -139,17 +138,19 @@ void handleClient(client& client_data){
                             std::cout << "Pair found!\n";
                             int pair_distance = std::distance(clients.begin(),pair_loc);
                             client old_client = clients[pair_distance];
+                            // destroy the first client's thread
                             std::cout << "Deleting pair's thread\n";
                             thread_clients[pair_distance].~thread();
+                            //
                             std::cout << "Creating new thread for the pair\n";
                             std::thread new_thread_for_old_client(handleClient, std::ref(old_client));
                             new_thread_for_old_client.detach();
                             thread_clients.push_back(std::move(new_thread_for_old_client));
-                            std::cout << "Pair Relationship established for sure!, old thread has been recreated\n";
+                            std::cout << "Old thread has been recreated\n";
                     
                         }
                         else{
-                            std::cerr << "Client pair not found for client: " << client_data.conn << std::endl; 
+                            std::cerr << "Client " << client_data.conn << "\'s pair does not exist in clients list\n" << std::endl; 
                         }
                     }
                 }
@@ -157,10 +158,10 @@ void handleClient(client& client_data){
             else{
                 std::cout << "\nRecieved message from client: " << client_data.conn << " ip: " << inet_ntoa(client_data.client_addr.sin_addr) << ":" << ntohs(client_data.client_addr.sin_port) << "\nMessage content:\n"<< recv_buf << std::endl;
                 std::string recv_data = recv_buf;
-                std::string peer_fail_message = "Failed to send message to peer";
+                std::string peer_fail_message = "Failed to send message to peer, please reconnect!\n";
                 if(client_data.peer != nullptr){
                     if(send(client_data.peer->conn,recv_buf,sizeof(recv_buf),0) > 0){
-                        std::cout << "Message sent to client(peer): " << client_data.peer->conn << std::endl;
+                        std::cout << "Message sent to client(peer): " << client_data.peer->conn << " ip: " << inet_ntoa(client_data.peer->client_addr.sin_addr) << ":" << ntohs(client_data.peer->client_addr.sin_port) << std::endl;
                     }
                     else {
                         std::cerr << "Failed to send message to client(peer): " << client_data.peer << std::endl;
@@ -176,7 +177,7 @@ void handleClient(client& client_data){
             memset(recv_buf, '\0', sizeof(recv_buf));
         }
         break;
-    }
+    }   
         std::cout << "\nClient disconnected: " << inet_ntoa(client_data.client_addr.sin_addr) << ":" << ntohs(client_data.client_addr.sin_port) << "\n";
         if(client_data.peerKeyACK && peersExists){
             peersExists = false;
