@@ -1,18 +1,15 @@
 #ifndef MESSAGE_UTILS_H
 #define MESSAGE_UTILS_H
 
-#include "socket_utils.h"
-#include "cryption_utils.h"
-#include <cstddef>
 #include <fstream>
-#include <algorithm>
-#include <mutex>
-#include <openssl/evp.h>
-#include <string>
+#include "socket_utils.h"       // create server socket, connect to server socket 
+#include "cryption_utils.h"     // encrypt, decrypt, base64encode, base64decode, load public/private key
+#include <algorithm>            // find_if, remove_if
+#include <mutex>                // mutex, lock_guard
 #include <thread>
 #include <ctime>
 
-constexpr size_t BUFFER_SIZE = 65536;
+constexpr int BUFFER_SIZE = 65536;
 std::mutex clientsMutex;
 
 class client{
@@ -22,12 +19,12 @@ class client{
         std::string key;         // client public key
         sockaddr_in client_addr; // client adress information
         std::string client_ip;   // client ip
-	    client* peer = nullptr;
+	    client* peer = nullptr;  
         int peer_conn;
-        bool keyACK = false;
+        bool keyACK = false;    
         bool peerKeyACK = false;
         // client constructor
-        client(int conn = -1, const sockaddr_in& addr = {}, const std::string& ip = "") 
+        client(int conn = -1, const sockaddr_in addr = {}, const std::string ip = "") 
         : name(""), conn(conn), key(""), client_addr(addr), client_ip(ip) {}
 };
 
@@ -41,17 +38,32 @@ inline void setPeer(client* client1,client* client2){
 }
 
 
-inline void logMessage(std::string logMessage,std::string& logLocation){
-    std::ofstream f(logLocation, std::ofstream::app); // append
+inline void logMessage(std::string logMessage,const std::string& logLocation){
+    std::ofstream f(logLocation, std::ofstream::app); // append into file
+    if(!f){
+        std::cerr << "Error: Problem while finding/opening the Log file\n";
+    }
+    else{
+        f << logMessage << std::endl;
+        // std::cout << logMessage << std::endl;
+        f.close();
+    }
+}
+
+inline void logMessage(std::string logMessage,const std::string& logLocation, std::ostream stream){
+    std::ofstream f(logLocation, std::ofstream::app); // append into file
     if(!f){
         std::cerr << "log file is not found/can't be opened\n";
     }
     else{
         f << logMessage << std::endl;
-        std::cout << logMessage << std::endl;
+        stream << logMessage << std::endl;
         f.close();
     }
 }
+
+
+
 
 inline int sendMessage(int clientSocket,std::string message){
     const char* msg = message.c_str();
@@ -61,6 +73,15 @@ inline int sendMessage(int clientSocket,std::string message){
     }
     std::cerr << "\tCouldn't send message\n";
     return -1;
+}
+
+inline void sendPublicKeyToServer(EVP_PKEY* publicKey,int clientSocket){
+    std::string pemKey = publicKeyToPEMString(publicKey);
+    if(sendMessage(clientSocket,pemKey) < 0){
+        std::cerr << "Couldn't Send Key to Server\n";
+        return;
+    }
+    std::cout << "Key Sent\n";
 }
 
 inline void readMessages(int client_fd, EVP_PKEY* pv_key,EVP_PKEY*& pb_key,std::string& tempKeyFile){
@@ -92,8 +113,10 @@ inline void readMessages(int client_fd, EVP_PKEY* pv_key,EVP_PKEY*& pb_key,std::
                     }
                 }
                 else{
-                    if (msg_recv.rfind("==", msg_recv.size() - 2) == (msg_recv.size() - 2)){                
+                    if (msg_recv.rfind("==", msg_recv.size() - 2) == (msg_recv.size() - 2)){                 
+                        // upon recieving base64 encoded message try to decode it  
                         // std::cout << "\nRecieved message! "; // << "Message contents: " << msg_recv << std::endl;
+                        
                         // encrypted base64 -> encrypted string -> decrypted string
                         std::vector<unsigned char> encrypted_binary_data = base64Decode(msg_recv);
                         std::string decrypted_text = decryptWithPrivateKey(pv_key,encrypted_binary_data);
@@ -119,7 +142,7 @@ inline int sendFile(int client_sock, std::string filePath,EVP_PKEY* pb_key){
         std::cerr << "Couldnt open file: " << filePath << std::endl;
         return -1;
     }
-    const size_t chunk_size = 230;
+    const int chunk_size = 230;
     char chunk_buffer[chunk_size];
     unsigned char encrypted_Buffer[EVP_PKEY_size(pb_key)];
     
@@ -129,7 +152,7 @@ inline int sendFile(int client_sock, std::string filePath,EVP_PKEY* pb_key){
 
     while(!file.eof()){
         file.read(chunk_buffer,chunk_size);
-        size_t bytesRead = file.gcount();
+        int bytesRead = file.gcount();
 
         if(bytesRead > 0){
             std::vector<unsigned char> encryptedMessage = encryptWithPublicKey(pb_key, chunk_buffer);  
@@ -149,15 +172,7 @@ inline int sendFile(int client_sock, std::string filePath,EVP_PKEY* pb_key){
 }
 */
 
-inline void sendPublicKeyToServer(EVP_PKEY* publicKey,int clientSocket){
-    std::string pemKey = publicKeyToPEMString(publicKey);
-    if(sendMessage(clientSocket,pemKey) < 0){
-        std::cerr << "Couldn't Send Key to Server\n";
-        return;
-    }
-    std::cout << "Key Sent\n";
-}
-
+/*
 inline std::vector<std::string> readFileContent(std::string &fileAddress){
     std::vector<std::string> output;
     std::cout << "Reading file at: " << fileAddress << "\n" ;
@@ -176,7 +191,8 @@ inline std::vector<std::string> readFileContent(std::string &fileAddress){
     }
     return output;
 }
-
+*/
+/*
 inline int recvPublicKeyFromServer(std::string &otherPublicKeyFileLocation,int clientSocket){
     char *recv_buf = new char[BUFFER_SIZE]; // buffer  2^16 because why not  
     std::cout << "Reading other public key from server\n";
@@ -201,5 +217,5 @@ inline int recvPublicKeyFromServer(std::string &otherPublicKeyFileLocation,int c
         return -1;
     }
 }
-
+*/
 #endif

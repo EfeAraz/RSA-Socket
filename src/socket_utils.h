@@ -1,13 +1,12 @@
 #ifndef SOCKET_UTILS_H
 #define SOCKET_UTILS_H
 
-#include <iostream>
-#include <cstring>
-#include <netinet/in.h>
-#include <openssl/evp.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <unistd.h>
+#include <iostream>		
+#include <cstring>		// memset(buffer, '\0', sizeof(buffer));
+#include <netinet/in.h>	// INADDR_ANY, htons, sockaddr_in 
+#include <sys/socket.h> // AF_INET, sockaddr, bind, connect, listen ... 
+#include <arpa/inet.h>	// inet_pton
+#include <unistd.h>		// close()
 constexpr int max_client_count = 3;
 
 //returns server socket file descriptor

@@ -8,73 +8,50 @@ int port_no = 8080;
 
 void handleClient(client& client_data);
 
-// mutex for clients vector thread-safety
+// mutex for thread-safety
 std::mutex clients_mutex;
 
-std::vector<client> clients;
-std::vector<std::thread> thread_clients;
+std::vector<client> clients;                // holds clients' informations
+std::vector<std::thread> thread_clients;    // holds threads for clients
 
 int main(int argc, char **argv){
 	if (argc>1){
-		// this is probably not safe practice but whatever
-		port_no = atoi(argv[1]); // ./bin/server <port>
+		port_no = atoi(argv[1]); // port
 	}
-    int server_sockfd = createServerSocket(port_no);
-	if (server_sockfd < 0) {
+    int server_sockfd = createServerSocket(port_no); // create server, set the file descriptor 
+	if (server_sockfd < 0) {    // check if server socket has been created properly
         std::cerr << "Failed to create server socket\n";
         return -1;
     }
 
-	sockaddr_in client_addr;
-	socklen_t length = sizeof(client_addr);
 
-	while(true) {
+	sockaddr_in client_addr; // https://beej.us/guide/bgnet/html/split/ip-addresses-structs-and-data-munging.html#structs:~:text=struct%20sockaddr_in%20%7B
+	socklen_t length = sizeof(client_addr);
+	while(true) { // while server is running
 		try{
-			// https://beej.us/guide/bgnet/html/split/ip-addresses-structs-and-data-munging.html#:~:text=network%20to%20printable
-			int conn = accept(server_sockfd, (sockaddr*)&client_addr,&length);
-			if(conn<0) {
+			int conn = accept(server_sockfd, (sockaddr*)&client_addr,&length); // accept clients
+		    if(conn<0) {    // check if client is accepted properly
 				std::cerr << "couldn't connect\n";
 				close(server_sockfd);
 				return -1;	
 			}
-            // Create new client on connection
-			std::cout << "\nnew client accepted.\n";
-			
-            char client_ip[INET_ADDRSTRLEN] = "";
-			inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
+            else{   
+                std::cout << "\nnew client accepted.\n";
+                char client_ip[INET_ADDRSTRLEN] = "";
+                inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN); // https://beej.us/guide/bgnet/html/split/ip-addresses-structs-and-data-munging.html#:~:text=network%20to%20printable
 
-			client new_client(conn, client_addr, client_ip);
-			{
-				std::lock_guard<std::mutex> lock(clients_mutex);
-				clients.push_back(new_client);
-                std::cout << "Client " << new_client.conn << " IP: " << new_client.client_ip << ":" <<  ntohs(new_client.client_addr.sin_port) << "\n";
-			}
-            std::thread newthread(handleClient, std::ref(clients.back()));
-            newthread.detach();
-            thread_clients.push_back(std::move(newthread));
-            /*
-            std::cout << "clients.size() = " << clients.size() << std::endl;
-            if(clients.size() == 2){
-                std::lock_guard<std::mutex> lock(clients_mutex);
-                client* pair = new_client.peer;
-                std::this_thread::sleep_for(std::chrono::seconds(15));
-                auto pair_loc = std::find_if(clients.begin(), clients.end(),[pair](const client& c) { return &c == pair; });
-                if(pair_loc != clients.end()){
+                client new_client(conn, client_addr, client_ip); // client constructor
+                {   // paranthesis for mutex 
                     std::lock_guard<std::mutex> lock(clients_mutex);
-                    int pair_distance = std::distance(clients.begin(),pair_loc);
-                    client old_client = clients[pair_distance];
-                    thread_clients[pair_distance].~thread();
-                    std::thread new_thread_for_old_client(handleClient, std::ref(old_client));
-                    new_thread_for_old_client.detach();
-                    thread_clients.push_back(std::move(new_thread_for_old_client));
-                    std::cout << "Peer Relationship established, old thread has been recreated\n";
-            
+                    clients.push_back(new_client); 
+                    // print client's info
+                    std::cout << "Client " << new_client.conn << " IP: " << new_client.client_ip << ":" <<  ntohs(new_client.client_addr.sin_port) << "\n"; 
                 }
-                else{
-                    std::cerr << "Client peer not found for client: " << new_client.conn << std::endl; 
-                }
+                // create thread for the new client
+                std::thread newthread(handleClient, std::ref(clients.back())); 
+                newthread.detach();
+                thread_clients.push_back(std::move(newthread));
             }
-            */
 		}
 		catch(const std::exception& e){
 			std::cerr << "An error occured " << e.what() << "\n";

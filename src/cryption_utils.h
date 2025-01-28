@@ -8,13 +8,12 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 
-// Don't modify the functions under this line if you're not especially using with them 
-extern inline void handleOpenSSLError(){
+inline void handleOpenSSLError(){
     ERR_print_errors_fp(stderr);
     abort();
 }
 
-extern inline EVP_PKEY* loadPublicKey(const std::string& publicKeyFile){
+inline EVP_PKEY* loadPublicKey(const std::string& publicKeyFile){
     FILE* fp = fopen(publicKeyFile.c_str(), "r");
     if(!fp){
         std::cerr << "Error: Couldn't open public key file\n";
@@ -22,7 +21,7 @@ extern inline EVP_PKEY* loadPublicKey(const std::string& publicKeyFile){
         exit(1);
     }
     
-    EVP_PKEY* publicKey = PEM_read_PUBKEY(fp,nullptr,nullptr,nullptr ); 
+    EVP_PKEY* publicKey = PEM_read_PUBKEY(fp,nullptr,nullptr,nullptr ); // read the key from file
     fclose(fp);
     if(!publicKey){
         std::cerr << "Error: Couldn't read public key\n";
@@ -31,21 +30,7 @@ extern inline EVP_PKEY* loadPublicKey(const std::string& publicKeyFile){
     return publicKey;
 }
 
-extern inline std::string publicKeyToPEMString(EVP_PKEY* publicKey) {
-    BIO* bio = BIO_new(BIO_s_mem());
-    if (!PEM_write_bio_PUBKEY(bio, publicKey)) {
-        BIO_free(bio);
-        std::cerr << "Failed to convert public key into string format\n";
-    }
-    char* pemData;
-    long pemLength = BIO_get_mem_data(bio, &pemData);
-    std::string pemString(pemData, pemLength);
-
-    BIO_free(bio);
-    return pemString;
-}
-
-extern inline EVP_PKEY* loadPrivateKey(const std::string& privateKeyFile){
+inline EVP_PKEY* loadPrivateKey(const std::string& privateKeyFile){
     FILE* fp = fopen(privateKeyFile.c_str(), "r");
     if(!fp){
         std::cerr << "Error: Couldn't open private key file\n";
@@ -64,7 +49,7 @@ extern inline EVP_PKEY* loadPrivateKey(const std::string& privateKeyFile){
 }   
 
 
-extern inline std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKey,const std::string& text){
+inline std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKey,const std::string& text){
     // read key content  
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(publicKey, nullptr);
     //if can't allocate throw error 
@@ -91,7 +76,7 @@ extern inline std::vector<unsigned char> encryptWithPublicKey(EVP_PKEY* publicKe
 }
 
 
-extern inline std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsigned char>& encryptedText) {
+inline std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std::vector<unsigned char>& encryptedText) {
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(privateKey, nullptr);  // key context 
     // if can't read the key throw error
     if (!ctx){
@@ -125,11 +110,7 @@ extern inline std::string decryptWithPrivateKey(EVP_PKEY* privateKey, const std:
 }
 
 
-extern inline void freeKey(EVP_PKEY *key){
-    EVP_PKEY_free(key);
-}
-
-extern inline std::string base64Encode(const std::vector<unsigned char>& binary) {
+inline std::string base64Encode(const std::vector<unsigned char>& binary) {
     BIO* bio = BIO_new(BIO_s_mem());
     BIO* b64 = BIO_new(BIO_f_base64());
     bio = BIO_push(b64, bio);
@@ -149,7 +130,7 @@ extern inline std::string base64Encode(const std::vector<unsigned char>& binary)
 }
 
 
-extern inline std::vector<unsigned char> base64Decode(const std::string& base64Text) {
+inline std::vector<unsigned char> base64Decode(const std::string& base64Text) {
     BIO* bio = BIO_new_mem_buf(base64Text.data(), base64Text.size());
     BIO* b64 = BIO_new(BIO_f_base64());
     bio = BIO_push(b64, bio);
@@ -169,5 +150,21 @@ extern inline std::vector<unsigned char> base64Decode(const std::string& base64T
     return decoded;
 }
  
+
+// turns EVP_PKEY into string
+inline std::string publicKeyToPEMString(EVP_PKEY* publicKey) {
+    BIO* bio = BIO_new(BIO_s_mem());
+    if (!PEM_write_bio_PUBKEY(bio, publicKey)) {
+        BIO_free(bio);
+        std::cerr << "Failed to convert public key into string format\n";
+    }
+    char* pemData;
+    long pemLength = BIO_get_mem_data(bio, &pemData);
+    std::string pemString(pemData, pemLength);
+
+    BIO_free(bio);
+    return pemString;
+}
+
 
 #endif // CRYPTO_UTILS_H
